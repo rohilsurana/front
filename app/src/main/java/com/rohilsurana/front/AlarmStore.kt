@@ -4,6 +4,7 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.util.Log
 import org.json.JSONArray
 import org.json.JSONObject
@@ -73,11 +74,11 @@ object AlarmStore {
             val arr = root.getJSONArray("alarms")
             val alarms = (0 until arr.length()).map { Alarm.fromJson(arr.getJSONObject(it)) }
 
-            // Persist and reschedule
+            // Always persist — scheduling is best-effort (may lack permission)
             saveAll(context, alarms)
+            prefs(context).edit().putLong(KEY_LAST_SYNC, System.currentTimeMillis()).apply()
             rescheduleAll(context, alarms)
 
-            prefs(context).edit().putLong(KEY_LAST_SYNC, System.currentTimeMillis()).apply()
             Log.d(TAG, "Synced ${alarms.size} alarms from API")
             Result.success(alarms)
 
@@ -143,15 +144,29 @@ object AlarmStore {
 
     // ── Scheduling ────────────────────────────────────────────────────────────
 
+    fun canScheduleExact(context: Context): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            alarmManager(context).canScheduleExactAlarms()
+        } else true
+    }
+
     fun schedule(context: Context, alarm: Alarm) {
         if (!alarm.enabled) return
+        if (!canScheduleExact(context)) {
+            Log.w(TAG, "Missing SCHEDULE_EXACT_ALARM permission — skipping schedule for '${alarm.label}'")
+            return
+        }
         val fireTime = alarm.nextFireTime() ?: return
-        alarmManager(context).setExactAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP,
-            fireTime.timeInMillis,
-            pendingIntent(context, alarm)
-        )
-        Log.d(TAG, "Scheduled '${alarm.label}' for ${alarm.timeLabel()} on ${alarm.daysLabel()}")
+        try {
+            alarmManager(context).setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                fireTime.timeInMillis,
+                pendingIntent(context, alarm)
+            )
+            Log.d(TAG, "Scheduled '${alarm.label}' for ${alarm.timeLabel()} on ${alarm.daysLabel()}")
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException scheduling '${alarm.label}': ${e.message}")
+        }
     }
 
     fun cancel(context: Context, alarm: Alarm) =

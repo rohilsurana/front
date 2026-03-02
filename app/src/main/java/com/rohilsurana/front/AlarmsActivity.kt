@@ -1,6 +1,9 @@
 package com.rohilsurana.front
 
+import android.content.Intent
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -32,11 +35,23 @@ class AlarmsActivity : AppCompatActivity() {
 
         updateSyncLabel()
         showEmpty()
+        updatePermissionBanner()
 
         binding.btnSync.setOnClickListener { sync() }
+        binding.btnGrantPermission.setOnClickListener { requestExactAlarmPermission() }
 
         // Auto-sync on open if no cached data
         if (AlarmStore.getAll(this).isEmpty()) sync()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Re-check permission in case user just came back from settings
+        updatePermissionBanner()
+        if (AlarmStore.canScheduleExact(this)) {
+            // Permission just granted — reschedule any cached alarms
+            AlarmStore.scheduleAll(this)
+        }
     }
 
     override fun onSupportNavigateUp(): Boolean { finish(); return true }
@@ -54,19 +69,30 @@ class AlarmsActivity : AppCompatActivity() {
                         adapter.setAlarms(alarms)
                         showEmpty()
                         updateSyncLabel()
+                        updatePermissionBanner()
                         binding.tvSyncError.visibility = View.GONE
-                        // Immediately fetch fresh text for the updated schedule
                         TextSyncWorker.syncNow(this)
                     },
                     onFailure = { err ->
                         binding.tvSyncError.text = "⚠️ Sync failed: ${err.message}"
                         binding.tvSyncError.visibility = View.VISIBLE
-                        // Still refresh list from cache
                         adapter.setAlarms(AlarmStore.getAll(this))
                         showEmpty()
                     }
                 )
             }
+        }
+    }
+
+    private fun updatePermissionBanner() {
+        val hasPermission = AlarmStore.canScheduleExact(this)
+        binding.layoutPermissionBanner.visibility =
+            if (!hasPermission) View.VISIBLE else View.GONE
+    }
+
+    private fun requestExactAlarmPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM))
         }
     }
 
