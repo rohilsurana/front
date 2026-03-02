@@ -1,5 +1,6 @@
 package com.rohilsurana.front
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -21,7 +22,8 @@ class AlarmService : Service() {
     companion object {
         private const val TAG = "AlarmService"
         private const val CHANNEL_ID = "FrontAlarmChannel"
-        private const val NOTIFICATION_ID = 42
+        const val NOTIFICATION_ID = 42
+        const val ACTION_STOP = "com.rohilsurana.front.ACTION_STOP_ALARM"
     }
 
     private var tts: TextToSpeech? = null
@@ -36,22 +38,30 @@ class AlarmService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startForeground(NOTIFICATION_ID, buildNotification("Alarm firing…"))
+        // Handle Stop tap from notification action
+        if (intent?.action == ACTION_STOP) {
+            Log.d(TAG, "Stop action received — stopping alarm")
+            cleanup()
+            return START_NOT_STICKY
+        }
+
+        // Resolve alarm info synchronously (SharedPrefs — no I/O delay)
+        val alarmId  = intent?.getStringExtra("alarm_id")
+        val alarm    = AlarmStore.getAll(this).find { it.id == alarmId }
+        val label    = alarm?.label ?: "Front Alarm"
+        val fallback = alarm?.fallback ?: "Wake up! Good morning!"
+        val text     = alarm?.let { AlarmStore.getCachedText(this, it.id) } ?: fallback
+
+        // Start foreground with rich notification immediately
+        startForeground(NOTIFICATION_ID, buildNotification(label, text))
+
+        Log.d(TAG, "Alarm [$alarmId] firing — label='$label', cached=${alarm != null}")
 
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
         wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Front::AlarmWakeLock")
             .also { it.acquire(60_000L) }
 
-        val alarmId = intent?.getStringExtra("alarm_id")
-        val alarm    = AlarmStore.getAll(this).find { it.id == alarmId }
-        val fallback = alarm?.fallback ?: "Wake up! Good morning!"
-
-        // Use pre-cached text — no network call at fire time
-        val text = alarm?.let { AlarmStore.getCachedText(this, it.id) } ?: fallback
-        Log.d(TAG, "Alarm [${alarmId}] speaking: $text (cached=${alarm != null && AlarmStore.getCachedText(this, alarmId ?: "") != null})")
-
         executor.execute {
-            // Re-schedule for next matching day
             alarm?.let { scheduleNext(it) }
             runTts(text)
         }
@@ -89,29 +99,56 @@ class AlarmService : Service() {
         try { tts?.stop(); tts?.shutdown(); tts = null } catch (e: Exception) { /* ignore */ }
         wakeLock?.let { if (it.isHeld) it.release() }
         wakeLock = null
+        stopForeground(true)
         stopSelf()
     }
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val ch = NotificationChannel(CHANNEL_ID, "Front Alarm", NotificationManager.IMPORTANCE_HIGH)
-                .apply { description = "Front alarm firing notification" }
+            val ch = NotificationChannel(
+                CHANNEL_ID,
+                "Front Alarm",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Shows while an alarm is speaking"
+                setShowBadge(true)
+            }
             (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
                 .createNotificationChannel(ch)
         }
     }
 
-    private fun buildNotification(text: String) =
-        NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Front")
+    private fun buildNotification(label: String, text: String): Notification {
+        // Tap notification → open app
+        val openPi = PendingIntent.getActivity(
+            this, 0,
+            Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            },
+            PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Stop action → re-deliver to this service with STOP action
+        val stopPi = PendingIntent.getService(
+            this, 1,
+            Intent(this, AlarmService::class.java).apply { action = ACTION_STOP },
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        return NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle(label)
             .setContentText(text)
-            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setContentIntent(
-                PendingIntent.getActivity(this, 0,
-                    Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
-            )
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            .setSmallIcon(R.drawable.ic_alarm)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setOngoing(true)        // can't be swiped away while ringing
+            .setAutoCancel(false)
+            .setContentIntent(openPi)
+            .addAction(R.drawable.ic_stop_circle, "Stop", stopPi)
             .build()
+    }
 
     override fun onDestroy() {
         super.onDestroy()
