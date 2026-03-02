@@ -1,0 +1,18 @@
+# Local build config
+local.properties
+
+# Build outputs
+app/build/
+build/
+
+# Gradle
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.DS_Store
