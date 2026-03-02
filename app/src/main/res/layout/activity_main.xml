@@ -1,78 +1,101 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F2F2F7">
+    android:background="@color/colorBackground"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
-
-        <!-- App title -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Front"
-            android:textSize="32sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="16dp"
-            android:layout_marginTop="8dp" />
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="20dp"
+        android:paddingBottom="24dp">
 
         <!-- ── Backend Endpoint card ── -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="20dp"
+            android:layout_marginBottom="24dp"
             app:cardCornerRadius="12dp"
-            app:cardElevation="2dp"
-            xmlns:app="http://schemas.android.com/apk/res-auto">
+            app:cardElevation="1dp"
+            app:cardBackgroundColor="@color/colorSurface">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="20dp">
 
+                <!-- Label -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Backend Endpoint"
+                    android:text="SERVER ENDPOINT"
+                    android:textSize="11sp"
                     android:textStyle="bold"
-                    android:textSize="14sp"
-                    android:layout_marginBottom="8dp" />
+                    android:letterSpacing="0.08"
+                    android:textColor="@color/colorTextSecondary"
+                    android:layout_marginBottom="12dp" />
 
-                <!-- URL field + Test button -->
+                <!-- URL input with visible border -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_input"
+                    android:layout_marginBottom="16dp">
+
+                    <EditText
+                        android:id="@+id/etServerUrl"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@android:color/transparent"
+                        android:hint="http://192.168.1.x:8766"
+                        android:inputType="textUri"
+                        android:singleLine="true"
+                        android:textSize="14sp"
+                        android:textColor="@color/colorTextPrimary"
+                        android:textColorHint="@color/colorTextHint"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:paddingTop="12dp"
+                        android:paddingBottom="12dp" />
+                </LinearLayout>
+
+                <!-- Buttons row -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:gravity="center_vertical">
-
-                    <EditText
-                        android:id="@+id/etServerUrl"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:hint="https://your-server.com/alarm-text"
-                        android:inputType="textUri"
-                        android:singleLine="true" />
+                    android:gravity="end">
 
                     <Button
                         android:id="@+id/btnTestUrl"
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="4dp"
+                        android:layout_height="40dp"
+                        android:layout_marginEnd="10dp"
+                        android:background="@drawable/bg_btn_outlined"
                         android:text="Test"
-                        style="@style/Widget.AppCompat.Button.Borderless" />
+                        android:textColor="@color/colorAccent"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:paddingStart="20dp"
+                        android:paddingEnd="20dp" />
 
                     <Button
                         android:id="@+id/btnSaveUrl"
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
+                        android:layout_height="40dp"
+                        android:background="@drawable/bg_btn_filled"
                         android:text="Save"
-                        style="@style/Widget.AppCompat.Button.Borderless" />
+                        android:textColor="#FFFFFF"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:paddingStart="24dp"
+                        android:paddingEnd="24dp" />
 
                 </LinearLayout>
 
@@ -83,21 +106,23 @@
                     android:layout_height="wrap_content"
                     android:visibility="gone"
                     android:textSize="13sp"
-                    android:layout_marginTop="8dp" />
+                    android:layout_marginTop="12dp" />
 
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- ── Feature tiles ── -->
+        <!-- ── Section label ── -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Features"
+            android:text="QUICK ACCESS"
+            android:textSize="11sp"
             android:textStyle="bold"
-            android:textSize="14sp"
-            android:textColor="#666666"
-            android:layout_marginBottom="10dp" />
+            android:letterSpacing="0.08"
+            android:textColor="@color/colorTextSecondary"
+            android:layout_marginBottom="12dp" />
 
+        <!-- ── Feature tiles ── -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -108,15 +133,15 @@
             <androidx.cardview.widget.CardView
                 android:id="@+id/tileAlarms"
                 android:layout_width="0dp"
-                android:layout_height="120dp"
+                android:layout_height="140dp"
                 android:layout_weight="1"
                 android:layout_marginEnd="8dp"
                 android:foreground="?attr/selectableItemBackground"
                 android:clickable="true"
                 android:focusable="true"
                 app:cardCornerRadius="12dp"
-                app:cardElevation="2dp"
-                xmlns:app="http://schemas.android.com/apk/res-auto">
+                app:cardElevation="1dp"
+                app:cardBackgroundColor="@color/colorSurface">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -125,19 +150,29 @@
                     android:gravity="center"
                     android:padding="16dp">
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="⏰"
-                        android:textSize="36sp" />
+                    <!-- Icon circle -->
+                    <LinearLayout
+                        android:layout_width="52dp"
+                        android:layout_height="52dp"
+                        android:background="@drawable/bg_icon_circle"
+                        android:gravity="center"
+                        android:layout_marginBottom="10dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="⏰"
+                            android:textSize="24sp" />
+
+                    </LinearLayout>
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Alarms"
+                        android:textSize="15sp"
                         android:textStyle="bold"
-                        android:textSize="16sp"
-                        android:layout_marginTop="8dp" />
+                        android:textColor="@color/colorTextPrimary" />
 
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
@@ -146,15 +181,15 @@
             <androidx.cardview.widget.CardView
                 android:id="@+id/tileMetrics"
                 android:layout_width="0dp"
-                android:layout_height="120dp"
+                android:layout_height="140dp"
                 android:layout_weight="1"
                 android:layout_marginStart="8dp"
                 android:foreground="?attr/selectableItemBackground"
                 android:clickable="true"
                 android:focusable="true"
                 app:cardCornerRadius="12dp"
-                app:cardElevation="2dp"
-                xmlns:app="http://schemas.android.com/apk/res-auto">
+                app:cardElevation="1dp"
+                app:cardBackgroundColor="@color/colorSurface">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -163,19 +198,29 @@
                     android:gravity="center"
                     android:padding="16dp">
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="📊"
-                        android:textSize="36sp" />
+                    <!-- Icon circle -->
+                    <LinearLayout
+                        android:layout_width="52dp"
+                        android:layout_height="52dp"
+                        android:background="@drawable/bg_icon_circle"
+                        android:gravity="center"
+                        android:layout_marginBottom="10dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="📊"
+                            android:textSize="24sp" />
+
+                    </LinearLayout>
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Metrics"
+                        android:textSize="15sp"
                         android:textStyle="bold"
-                        android:textSize="16sp"
-                        android:layout_marginTop="8dp" />
+                        android:textColor="@color/colorTextPrimary" />
 
                 </LinearLayout>
             </androidx.cardview.widget.CardView>

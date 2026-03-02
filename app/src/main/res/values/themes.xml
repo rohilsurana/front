@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+        <item name="android:windowBackground">@color/colorBackground</item>
+
+        <!-- Action bar styling -->
+        <item name="actionBarStyle">@style/AppTheme.ActionBar</item>
+        <item name="actionBarTheme">@style/AppTheme.ActionBarOverlay</item>
+    </style>
+
+    <style name="AppTheme.ActionBar" parent="Widget.AppCompat.ActionBar.Solid">
+        <item name="background">@color/colorPrimary</item>
+        <item name="elevation">0dp</item>
+    </style>
+
+    <style name="AppTheme.ActionBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar">
+        <item name="colorControlNormal">#FFFFFF</item>
+    </style>
+</resources>

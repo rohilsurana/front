@@ -32,6 +32,9 @@ class AlarmAdapter(
         holder.tvEnabled.setTextColor(
             if (alarm.enabled) 0xFF2E7D32.toInt() else 0xFF9E9E9E.toInt()
         )
+        holder.tvEnabled.setBackgroundResource(
+            if (alarm.enabled) R.drawable.bg_badge_on else R.drawable.bg_badge_off
+        )
     }
 
     override fun getItemCount() = alarms.size

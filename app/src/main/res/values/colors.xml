@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand -->
+    <color name="colorPrimary">#1A1A1A</color>
+    <color name="colorPrimaryDark">#111111</color>
+    <color name="colorAccent">#E53935</color>
+
+    <!-- Surfaces -->
+    <color name="colorBackground">#F5F5F5</color>
+    <color name="colorSurface">#FFFFFF</color>
+
+    <!-- Text -->
+    <color name="colorTextPrimary">#1A1A1A</color>
+    <color name="colorTextSecondary">#757575</color>
+    <color name="colorTextHint">#BDBDBD</color>
+
+    <!-- Alarm states -->
+    <color name="colorEnabled">#2E7D32</color>
+    <color name="colorEnabledBg">#E8F5E9</color>
+    <color name="colorDisabled">#9E9E9E</color>
+    <color name="colorDisabledBg">#EFEFEF</color>
+
+    <!-- UI -->
+    <color name="colorDivider">#EEEEEE</color>
+    <color name="colorInputBorder">#DDDDDD</color>
+    <color name="colorIconCircle">#FFF0F0</color>
+
+    <!-- Warning banner -->
+    <color name="colorWarningBg">#FFF3CD</color>
+    <color name="colorWarningText">#856404</color>
+</resources>

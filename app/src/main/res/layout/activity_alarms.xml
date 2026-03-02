@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#F2F2F7">
+    android:background="@color/colorBackground">
 
     <!-- Permission banner — shown when SCHEDULE_EXACT_ALARM not granted -->
     <LinearLayout
@@ -14,7 +14,7 @@
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:padding="12dp"
-        android:background="#FFF3CD"
+        android:background="@color/colorWarningBg"
         android:visibility="gone">
 
         <TextView
@@ -23,7 +23,7 @@
             android:layout_weight="1"
             android:text="⚠️ Exact alarm permission needed for alarms to fire on time"
             android:textSize="12sp"
-            android:textColor="#856404" />
+            android:textColor="@color/colorWarningText" />
 
         <Button
             android:id="@+id/btnGrantPermission"
@@ -31,6 +31,7 @@
             android:layout_height="wrap_content"
             android:text="Grant"
             android:textSize="12sp"
+            android:textColor="@color/colorAccent"
             style="@style/Widget.AppCompat.Button.Borderless" />
 
     </LinearLayout>
@@ -41,8 +42,11 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:padding="16dp"
-        android:background="@android:color/white">
+        android:paddingStart="16dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
+        android:background="@color/colorSurface">
 
         <LinearLayout
             android:layout_width="0dp"
@@ -56,7 +60,7 @@
                 android:layout_height="wrap_content"
                 android:text="Never synced"
                 android:textSize="13sp"
-                android:textColor="#666666" />
+                android:textColor="@color/colorTextSecondary" />
 
             <TextView
                 android:id="@+id/tvSyncError"
@@ -64,15 +68,15 @@
                 android:layout_height="wrap_content"
                 android:visibility="gone"
                 android:textSize="12sp"
-                android:textColor="#C62828"
+                android:textColor="@color/colorAccent"
                 android:layout_marginTop="2dp" />
 
         </LinearLayout>
 
         <ProgressBar
             android:id="@+id/progressSync"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
             android:layout_marginEnd="8dp"
             android:visibility="gone"
             style="?android:attr/progressBarStyleSmall" />
@@ -80,11 +84,22 @@
         <Button
             android:id="@+id/btnSync"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="36dp"
+            android:background="@drawable/bg_btn_outlined"
             android:text="Sync"
-            style="@style/Widget.AppCompat.Button.Borderless" />
+            android:textColor="@color/colorAccent"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp" />
 
     </LinearLayout>
+
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/colorDivider" />
 
     <!-- Alarm list -->
     <androidx.recyclerview.widget.RecyclerView
@@ -103,7 +118,7 @@
         android:layout_weight="1"
         android:gravity="center"
         android:text="No alarms synced yet.\nTap Sync to fetch from the backend."
-        android:textColor="#888888"
+        android:textColor="@color/colorTextSecondary"
         android:textSize="15sp"
         android:visibility="gone" />
 
