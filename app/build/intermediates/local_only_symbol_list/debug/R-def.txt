@@ -1,0 +1,24 @@
+R_DEF: Internal format may change without notice
+local
+id btnSaveUrl
+id btnSync
+id btnTestUrl
+id etServerUrl
+id progressSync
+id rvAlarms
+id tileAlarms
+id tileMetrics
+id tvAlarmDays
+id tvAlarmEnabled
+id tvAlarmLabel
+id tvAlarmTime
+id tvEmpty
+id tvLastSync
+id tvSyncError
+id tvTestResult
+layout activity_alarms
+layout activity_main
+layout activity_metrics
+layout item_alarm
+string app_name
+xml network_security_config

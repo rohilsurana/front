@@ -61,18 +61,21 @@ class MainActivity : AppCompatActivity() {
         binding.tvTestResult.setTextColor(0xFF888888.toInt())
         binding.tvTestResult.text = "⏳ Connecting…"
 
+        // Test the /alarms endpoint — the actual URL the app uses
+        val testUrl = url.trimEnd('/') + "/alarms"
+
         executor.execute {
             val (success, message) = try {
-                val conn = (URL(url).openConnection() as HttpURLConnection).apply {
+                val conn = (URL(testUrl).openConnection() as HttpURLConnection).apply {
                     requestMethod = "GET"
                     connectTimeout = 5000
                     readTimeout = 5000
-                    setRequestProperty("Accept", "text/plain")
+                    setRequestProperty("Accept", "application/json")
                 }
                 val code = conn.responseCode
                 if (code == HttpURLConnection.HTTP_OK) {
                     val body = conn.inputStream.bufferedReader().readText().trim()
-                    if (body.isNotEmpty()) true to "✅ Got response:\n\"$body\""
+                    if (body.isNotEmpty()) true to "✅ Connected to $testUrl"
                     else false to "⚠️ Server replied 200 but body was empty"
                 } else {
                     false to "❌ Server returned HTTP $code"
