@@ -12,7 +12,7 @@
     </style>
 
     <style name="AppTheme.ActionBar" parent="Widget.AppCompat.ActionBar.Solid">
-        <item name="background">@color/colorPrimary</item>
+        <item name="background">@color/colorAccent</item>
         <item name="elevation">0dp</item>
     </style>
 

@@ -2,7 +2,7 @@
 <resources>
     <!-- Brand -->
     <color name="colorPrimary">#1A1A1A</color>
-    <color name="colorPrimaryDark">#111111</color>
+    <color name="colorPrimaryDark">#C62828</color>
     <color name="colorAccent">#E53935</color>
 
     <!-- Surfaces -->
