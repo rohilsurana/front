@@ -130,19 +130,21 @@ Label below: `15sp`, bold, `@color/colorTextPrimary`.
 
 ### Icons — Always Use the Helper Script
 
-**⚠️ Never add icons manually.** Always use `tools/get-icon.sh` to download and convert icons.
+**⚠️ Never add icons manually.** Always use `tools/get-icon.js` to download and convert icons.
 
 ```bash
 # From the project root:
-bash tools/get-icon.sh <icon_name>              # rounded (default)
-bash tools/get-icon.sh <icon_name> outlined     # outlined style
-bash tools/get-icon.sh <icon_name> sharp        # sharp/angular style
+node tools/get-icon.js <icon_name>              # rounded (default)
+node tools/get-icon.js <icon_name> outlined     # outlined style
+node tools/get-icon.js <icon_name> sharp        # sharp/angular style
 
 # Examples:
-bash tools/get-icon.sh alarm
-bash tools/get-icon.sh bar_chart rounded
-bash tools/get-icon.sh check_circle outlined
+node tools/get-icon.js alarm
+node tools/get-icon.js bar_chart rounded
+node tools/get-icon.js check_circle outlined
 ```
+
+> **Why a custom script?** Material Symbols SVGs use `viewBox="0 -960 960 960"` — the Y-axis starts at -960. The script detects this and wraps paths in `<group android:translateY="960">` to shift them into Android's visible viewport. Generic converters (like svg2vectordrawable) silently drop this offset, rendering icons invisible.
 
 - Source: **Material Symbols** (Google) — browse at https://fonts.google.com/icons
 - Icon names are lowercase with underscores (e.g. `bar_chart`, `alarm_on`, `check_circle`)
