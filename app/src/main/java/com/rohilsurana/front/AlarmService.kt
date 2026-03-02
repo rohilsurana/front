@@ -16,7 +16,6 @@ import androidx.core.app.NotificationCompat
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
-import java.util.Calendar
 import java.util.Locale
 import java.util.concurrent.Executors
 
@@ -47,17 +46,20 @@ class AlarmService : Service() {
         wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Front::AlarmWakeLock")
             .also { it.acquire(60_000L) }
 
-        val alarmId = intent?.getIntExtra("alarm_id", -1) ?: -1
-        val alarm = AlarmStore.getAll(this).find { it.id == alarmId }
-        val url      = AlarmStore.getServerUrl(this)
+        val alarmId = intent?.getStringExtra("alarm_id")
+        val alarm    = AlarmStore.getAll(this).find { it.id == alarmId }
         val fallback = alarm?.fallback ?: "Wake up! Good morning!"
+        val textUrl  = alarm?.let {
+            val base = AlarmStore.getServerUrl(this).trimEnd('/')
+            if (it.textPath.isNotBlank() && base.isNotEmpty()) "$base${it.textPath}" else ""
+        } ?: ""
 
         executor.execute {
-            val text = fetchTextOrFallback(url, fallback)
-            Log.d(TAG, "Alarm [$alarmId] speaking: $text")
+            val text = fetchTextOrFallback(textUrl, fallback)
+            Log.d(TAG, "Alarm [${alarmId}] speaking: $text")
 
-            // Re-schedule for tomorrow before TTS (ensures alarm persists even if TTS crashes)
-            alarm?.let { scheduleForTomorrow(it) }
+            // Re-schedule for next matching day before TTS
+            alarm?.let { scheduleNext(it) }
 
             runTts(text)
         }
@@ -90,17 +92,11 @@ class AlarmService : Service() {
         }
     }
 
-    private fun scheduleForTomorrow(alarm: Alarm) {
-        val cal = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, alarm.hour)
-            set(Calendar.MINUTE, alarm.minute)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-            add(Calendar.DAY_OF_YEAR, 1)
-        }
-        val pi = AlarmStore.pendingIntent(this, alarm.id)
+    private fun scheduleNext(alarm: Alarm) {
+        val fireTime = alarm.nextFireTime() ?: return
+        val pi = AlarmStore.pendingIntent(this, alarm)
         val am = getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
-        am.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, cal.timeInMillis, pi)
+        am.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, fireTime.timeInMillis, pi)
     }
 
     private fun runTts(text: String) {

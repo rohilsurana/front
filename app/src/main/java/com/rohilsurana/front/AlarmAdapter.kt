@@ -3,23 +3,18 @@ package com.rohilsurana.front
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageButton
-import android.widget.Switch
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
 class AlarmAdapter(
-    private val alarms: MutableList<Alarm>,
-    private val onToggle: (Alarm, Boolean) -> Unit,
-    private val onDelete: (Alarm) -> Unit,
-    private val onEdit:   (Alarm) -> Unit
+    private val alarms: MutableList<Alarm>
 ) : RecyclerView.Adapter<AlarmAdapter.ViewHolder>() {
 
     inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val tvTime:    TextView    = view.findViewById(R.id.tvAlarmTime)
-        val tvLabel:   TextView    = view.findViewById(R.id.tvAlarmLabel)
-        val swEnabled: Switch      = view.findViewById(R.id.swAlarmEnabled)
-        val btnDelete: ImageButton = view.findViewById(R.id.btnAlarmDelete)
+        val tvTime:    TextView = view.findViewById(R.id.tvAlarmTime)
+        val tvLabel:   TextView = view.findViewById(R.id.tvAlarmLabel)
+        val tvDays:    TextView = view.findViewById(R.id.tvAlarmDays)
+        val tvEnabled: TextView = view.findViewById(R.id.tvAlarmEnabled)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -30,16 +25,13 @@ class AlarmAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val alarm = alarms[position]
-
-        holder.tvTime.text  = alarm.timeLabel()
-        holder.tvLabel.text = alarm.label.ifEmpty { "Alarm" }
-        holder.swEnabled.isChecked = alarm.enabled
-
-        holder.swEnabled.setOnCheckedChangeListener(null) // avoid stale listeners
-        holder.swEnabled.setOnCheckedChangeListener { _, checked -> onToggle(alarm, checked) }
-
-        holder.btnDelete.setOnClickListener { onDelete(alarm) }
-        holder.itemView.setOnClickListener  { onEdit(alarm) }
+        holder.tvTime.text    = alarm.timeLabel()
+        holder.tvLabel.text   = alarm.label
+        holder.tvDays.text    = alarm.daysLabel()
+        holder.tvEnabled.text = if (alarm.enabled) "ON" else "OFF"
+        holder.tvEnabled.setTextColor(
+            if (alarm.enabled) 0xFF2E7D32.toInt() else 0xFF9E9E9E.toInt()
+        )
     }
 
     override fun getItemCount() = alarms.size

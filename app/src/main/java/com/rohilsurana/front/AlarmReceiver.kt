@@ -8,7 +8,7 @@ import android.os.Build
 class AlarmReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        val alarmId = intent.getIntExtra("alarm_id", -1)
+        val alarmId = intent.getStringExtra("alarm_id") ?: return
 
         val serviceIntent = Intent(context, AlarmService::class.java)
             .putExtra("alarm_id", alarmId)
