@@ -13,9 +13,6 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.URL
 import java.util.Locale
 import java.util.concurrent.Executors
 
@@ -25,7 +22,6 @@ class AlarmService : Service() {
         private const val TAG = "AlarmService"
         private const val CHANNEL_ID = "FrontAlarmChannel"
         private const val NOTIFICATION_ID = 42
-        private const val FETCH_TIMEOUT_MS = 5000
     }
 
     private var tts: TextToSpeech? = null
@@ -49,47 +45,18 @@ class AlarmService : Service() {
         val alarmId = intent?.getStringExtra("alarm_id")
         val alarm    = AlarmStore.getAll(this).find { it.id == alarmId }
         val fallback = alarm?.fallback ?: "Wake up! Good morning!"
-        val textUrl  = alarm?.let {
-            val base = AlarmStore.getServerUrl(this).trimEnd('/')
-            if (it.textPath.isNotBlank() && base.isNotEmpty()) "$base${it.textPath}" else ""
-        } ?: ""
+
+        // Use pre-cached text — no network call at fire time
+        val text = alarm?.let { AlarmStore.getCachedText(this, it.id) } ?: fallback
+        Log.d(TAG, "Alarm [${alarmId}] speaking: $text (cached=${alarm != null && AlarmStore.getCachedText(this, alarmId ?: "") != null})")
 
         executor.execute {
-            val text = fetchTextOrFallback(textUrl, fallback)
-            Log.d(TAG, "Alarm [${alarmId}] speaking: $text")
-
-            // Re-schedule for next matching day before TTS
+            // Re-schedule for next matching day
             alarm?.let { scheduleNext(it) }
-
             runTts(text)
         }
 
         return START_NOT_STICKY
-    }
-
-    private fun fetchTextOrFallback(url: String, fallback: String): String {
-        if (url.isBlank()) return fallback
-        return try {
-            val conn = (URL(url).openConnection() as HttpURLConnection).apply {
-                requestMethod = "GET"
-                connectTimeout = FETCH_TIMEOUT_MS
-                readTimeout = FETCH_TIMEOUT_MS
-                setRequestProperty("Accept", "text/plain")
-            }
-            if (conn.responseCode == HttpURLConnection.HTTP_OK) {
-                val body = conn.inputStream.bufferedReader().readText().trim()
-                if (body.isNotEmpty()) body else fallback
-            } else {
-                Log.w(TAG, "HTTP ${conn.responseCode} — using fallback")
-                fallback
-            }
-        } catch (e: IOException) {
-            Log.w(TAG, "Network error: ${e.message} — using fallback")
-            fallback
-        } catch (e: Exception) {
-            Log.e(TAG, "Unexpected: ${e.message} — using fallback")
-            fallback
-        }
     }
 
     private fun scheduleNext(alarm: Alarm) {

@@ -55,9 +55,9 @@ Fetch the full alarm schedule. The app calls this on launch and on manual sync.
 
 ## `GET /alarms/{id}/text`
 
-Called by the app **at alarm fire time** to fetch what to speak. Keeping this separate
-from `/alarms` allows the text to be dynamic (day-aware, task-aware, weather-aware, etc.)
-without re-syncing the whole schedule.
+Fetched by the app on a **20-minute background sync** (not at fire time) so the text
+is always pre-cached and ready. Keeping this separate from `/alarms` allows the message
+to be dynamic (day-aware, task-aware, weather-aware) without re-syncing the whole schedule.
 
 ### Response `200 OK`
 
@@ -67,12 +67,14 @@ Content-Type: text/plain
 Good morning Rohil! Today is Monday. You have a standup at 10 and gym at 7 PM. Don't skip leg day.
 ```
 
-### Behaviour
+### Sync behaviour
 
-- The app fetches this with a **5 second timeout**
-- On any failure (timeout, non-200, empty body, no network) → speaks `fallback` instead
-- The `text_path` from `/alarms` is appended to the configured base URL:
-  `{base_url}{text_path}` → e.g. `http://192.168.1.2:8765/alarms/morning/text`
+- `TextSyncWorker` runs every **20 minutes** via WorkManager (requires network)
+- An **immediate sync** is also triggered right after `/alarms` is fetched
+- On each run: fetches `{base_url}{text_path}` for every enabled alarm
+- Success → updates the cache. Failure → **stale cache is preserved** (no overwrite)
+- At alarm fire time the app reads directly from cache — zero network dependency
+- Priority: `cached text` → `alarm.fallback`
 
 ---
 

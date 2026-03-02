@@ -55,6 +55,8 @@ class AlarmsActivity : AppCompatActivity() {
                         showEmpty()
                         updateSyncLabel()
                         binding.tvSyncError.visibility = View.GONE
+                        // Immediately fetch fresh text for the updated schedule
+                        TextSyncWorker.syncNow(this)
                     },
                     onFailure = { err ->
                         binding.tvSyncError.text = "⚠️ Sync failed: ${err.message}"
@@ -74,11 +76,15 @@ class AlarmsActivity : AppCompatActivity() {
     }
 
     private fun updateSyncLabel() {
-        val ms = AlarmStore.lastSyncMs(this)
-        binding.tvLastSync.text = if (ms == 0L) {
-            "Never synced"
-        } else {
-            "Last sync: ${SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault()).format(Date(ms))}"
+        val fmt = SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault())
+        val scheduleMs = AlarmStore.lastSyncMs(this)
+        val textMs = AlarmStore.lastTextSyncMs(this)
+        binding.tvLastSync.text = buildString {
+            append(if (scheduleMs == 0L) "Schedule: never synced"
+                   else "Schedule: ${fmt.format(Date(scheduleMs))}")
+            append("\n")
+            append(if (textMs == 0L) "Text: never synced"
+                   else "Text: ${fmt.format(Date(textMs))}")
         }
     }
 

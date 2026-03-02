@@ -26,6 +26,9 @@ class MainActivity : AppCompatActivity() {
         binding.btnTestUrl.setOnClickListener { testUrl() }
         binding.btnSaveUrl.setOnClickListener { saveUrl() }
 
+        // Ensure 20-min text sync is always scheduled
+        TextSyncWorker.schedulePeriodic(this)
+
         binding.tileAlarms.setOnClickListener {
             startActivity(Intent(this, AlarmsActivity::class.java))
         }

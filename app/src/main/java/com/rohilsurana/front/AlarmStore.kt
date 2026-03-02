@@ -7,6 +7,7 @@ import android.content.Intent
 import android.util.Log
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -15,8 +16,10 @@ object AlarmStore {
     private const val TAG = "AlarmStore"
     const val PREFS_NAME        = "FrontAlarmPrefs"
     const val KEY_SERVER_URL    = "server_url"
-    private const val KEY_ALARMS        = "alarms_json"
-    private const val KEY_LAST_SYNC     = "last_sync_ms"
+    private const val KEY_ALARMS         = "alarms_json"
+    private const val KEY_LAST_SYNC      = "last_sync_ms"
+    private const val KEY_TEXT_PREFIX    = "alarm_text_"       // + alarm id
+    private const val KEY_TEXT_SYNC_MS   = "alarm_text_sync_ms" // last text sync timestamp
 
     // ── CRUD ─────────────────────────────────────────────────────────────────
 
@@ -82,6 +85,60 @@ object AlarmStore {
             Log.e(TAG, "Sync failed: ${e.message}")
             Result.failure(e)
         }
+    }
+
+    // ── Text cache ────────────────────────────────────────────────────────────
+
+    /** Returns the last successfully fetched TTS text for this alarm, or null if never synced. */
+    fun getCachedText(context: Context, alarmId: String): String? =
+        prefs(context).getString(KEY_TEXT_PREFIX + alarmId, null)
+
+    fun cacheText(context: Context, alarmId: String, text: String) =
+        prefs(context).edit().putString(KEY_TEXT_PREFIX + alarmId, text).apply()
+
+    fun lastTextSyncMs(context: Context): Long =
+        prefs(context).getLong(KEY_TEXT_SYNC_MS, 0L)
+
+    /**
+     * Fetches the TTS text for every enabled alarm and caches it.
+     * Failures are silently skipped — stale cache is preserved.
+     * Must be called from a background thread.
+     * Returns true if at least one text was successfully fetched.
+     */
+    fun syncTextsFromApi(context: Context): Boolean {
+        val baseUrl = getServerUrl(context).trimEnd('/')
+        if (baseUrl.isEmpty()) return false
+
+        var anySuccess = false
+        getAll(context)
+            .filter { it.enabled && it.textPath.isNotBlank() }
+            .forEach { alarm ->
+                try {
+                    val conn = (URL("$baseUrl${alarm.textPath}").openConnection()
+                            as HttpURLConnection).apply {
+                        requestMethod = "GET"
+                        connectTimeout = 5000
+                        readTimeout = 5000
+                    }
+                    if (conn.responseCode == HttpURLConnection.HTTP_OK) {
+                        val text = conn.inputStream.bufferedReader().readText().trim()
+                        if (text.isNotEmpty()) {
+                            cacheText(context, alarm.id, text)
+                            anySuccess = true
+                            Log.d(TAG, "Cached text for '${alarm.label}'")
+                        }
+                    } else {
+                        Log.w(TAG, "Text fetch for '${alarm.id}' returned ${conn.responseCode} — keeping stale cache")
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Text fetch for '${alarm.id}' failed: ${e.message} — keeping stale cache")
+                }
+            }
+
+        if (anySuccess) {
+            prefs(context).edit().putLong(KEY_TEXT_SYNC_MS, System.currentTimeMillis()).apply()
+        }
+        return anySuccess
     }
 
     // ── Scheduling ────────────────────────────────────────────────────────────
