@@ -128,6 +128,48 @@ Label below: `15sp`, bold, `@color/colorTextPrimary`.
 
 ---
 
+### Icons — Always Use the Helper Script
+
+**⚠️ Never add icons manually.** Always use `tools/get-icon.sh` to download and convert icons.
+
+```bash
+# From the project root:
+bash tools/get-icon.sh <icon_name>              # rounded (default)
+bash tools/get-icon.sh <icon_name> outlined     # outlined style
+bash tools/get-icon.sh <icon_name> sharp        # sharp/angular style
+
+# Examples:
+bash tools/get-icon.sh alarm
+bash tools/get-icon.sh bar_chart rounded
+bash tools/get-icon.sh check_circle outlined
+```
+
+- Source: **Material Symbols** (Google) — browse at https://fonts.google.com/icons
+- Icon names are lowercase with underscores (e.g. `bar_chart`, `alarm_on`, `check_circle`)
+- Output: `app/src/main/res/drawable/ic_<name>.xml` — pure Android vector drawable
+- Only downloaded icons end up in the APK — no bundle bloat
+- Default style is **rounded** (consistent with our soft card aesthetic)
+
+**Use in XML layouts:**
+```xml
+<ImageView
+    android:layout_width="24dp"
+    android:layout_height="24dp"
+    android:src="@drawable/ic_alarm"
+    android:tint="@color/colorAccent"
+    android:contentDescription="..." />
+```
+
+**Icons in use:**
+| File | Icon | Used in |
+|---|---|---|
+| `ic_alarm.xml` | alarm (rounded) | Alarms tile |
+| `ic_bar_chart.xml` | bar_chart (rounded) | Metrics tile |
+| `ic_sync.xml` | sync (rounded) | Available for sync buttons |
+| `ic_warning.xml` | warning (rounded) | Permission banner |
+
+---
+
 ### Drawables Reference
 
 | File | What it styles |

@@ -162,11 +162,12 @@
                         android:gravity="center"
                         android:layout_marginBottom="10dp">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="⏰"
-                            android:textSize="24sp" />
+                        <ImageView
+                            android:layout_width="26dp"
+                            android:layout_height="26dp"
+                            android:src="@drawable/ic_alarm"
+                            android:tint="@color/colorAccent"
+                            android:contentDescription="Alarms" />
 
                     </LinearLayout>
 
@@ -212,11 +213,12 @@
                         android:gravity="center"
                         android:layout_marginBottom="10dp">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="📊"
-                            android:textSize="24sp" />
+                        <ImageView
+                            android:layout_width="26dp"
+                            android:layout_height="26dp"
+                            android:src="@drawable/ic_bar_chart"
+                            android:tint="@color/colorAccent"
+                            android:contentDescription="Metrics" />
 
                     </LinearLayout>
 

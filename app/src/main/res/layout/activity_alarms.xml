@@ -17,11 +17,19 @@
         android:background="@color/colorWarningBg"
         android:visibility="gone">
 
+        <ImageView
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_marginEnd="8dp"
+            android:src="@drawable/ic_warning"
+            android:tint="@color/colorWarningText"
+            android:contentDescription="Warning" />
+
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="⚠️ Exact alarm permission needed for alarms to fire on time"
+            android:text="Exact alarm permission needed for alarms to fire on time"
             android:textSize="12sp"
             android:textColor="@color/colorWarningText" />
 
