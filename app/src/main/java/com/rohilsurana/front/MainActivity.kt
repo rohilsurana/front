@@ -8,15 +8,21 @@ import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.rohilsurana.front.databinding.ActivityMainBinding
+import java.io.IOException
+import java.net.HttpURLConnection
+import java.net.URL
 import java.util.Calendar
+import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var prefs: SharedPreferences
+    private val executor = Executors.newSingleThreadExecutor()
 
     companion object {
         const val PREFS_NAME = "FrontAlarmPrefs"
@@ -38,6 +44,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnSetAlarm.setOnClickListener { scheduleAlarm() }
         binding.btnCancelAlarm.setOnClickListener { cancelAlarm() }
+        binding.btnTestUrl.setOnClickListener { testUrl() }
 
         // On Android 12+ we need exact alarm permission
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -60,6 +67,53 @@ class MainActivity : AppCompatActivity() {
 
         val active = prefs.getBoolean(KEY_ACTIVE, false)
         binding.tvStatus.text = if (active) "Alarm is SET ✅" else "No alarm set"
+    }
+
+    private fun testUrl() {
+        val url = binding.etUrl.text.toString().trim()
+        if (url.isEmpty()) {
+            Toast.makeText(this, "Enter a URL to test", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        binding.btnTestUrl.isEnabled = false
+        binding.tvTestResult.visibility = View.VISIBLE
+        binding.tvTestResult.setTextColor(0xFF888888.toInt())
+        binding.tvTestResult.text = "⏳ Connecting…"
+
+        executor.execute {
+            val (success, message) = try {
+                val conn = (URL(url).openConnection() as HttpURLConnection).apply {
+                    requestMethod = "GET"
+                    connectTimeout = 5000
+                    readTimeout = 5000
+                    setRequestProperty("Accept", "text/plain")
+                }
+                val code = conn.responseCode
+                if (code == HttpURLConnection.HTTP_OK) {
+                    val body = conn.inputStream.bufferedReader().readText().trim()
+                    if (body.isNotEmpty())
+                        true to "✅ Got response:\n\"$body\""
+                    else
+                        false to "⚠️ Server replied 200 but body was empty"
+                } else {
+                    false to "❌ Server returned HTTP $code"
+                }
+            } catch (e: IOException) {
+                false to "❌ Connection failed: ${e.message}"
+            } catch (e: Exception) {
+                false to "❌ Error: ${e.message}"
+            }
+
+            runOnUiThread {
+                binding.btnTestUrl.isEnabled = true
+                binding.tvTestResult.visibility = View.VISIBLE
+                binding.tvTestResult.setTextColor(
+                    if (success) 0xFF2E7D32.toInt() else 0xFFC62828.toInt()
+                )
+                binding.tvTestResult.text = message
+            }
+        }
     }
 
     private fun scheduleAlarm() {
