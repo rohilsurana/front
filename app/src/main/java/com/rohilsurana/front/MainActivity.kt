@@ -1,4 +1,4 @@
-package com.example.ttsalarm
+package com.rohilsurana.front
 
 import android.app.AlarmManager
 import android.app.PendingIntent
@@ -10,7 +10,7 @@ import android.os.Bundle
 import android.provider.Settings
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.example.ttsalarm.databinding.ActivityMainBinding
+import com.rohilsurana.front.databinding.ActivityMainBinding
 import java.util.Calendar
 
 class MainActivity : AppCompatActivity() {
@@ -19,7 +19,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var prefs: SharedPreferences
 
     companion object {
-        const val PREFS_NAME = "TtsAlarmPrefs"
+        const val PREFS_NAME = "FrontAlarmPrefs"
         const val KEY_URL = "alarm_url"
         const val KEY_FALLBACK = "alarm_fallback"
         const val KEY_HOUR = "alarm_hour"

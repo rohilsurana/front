@@ -14,7 +14,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="🔔 TTS Alarm"
+            android:text="🔔 Front"
             android:textSize="28sp"
             android:textStyle="bold"
             android:layout_marginBottom="24dp" />

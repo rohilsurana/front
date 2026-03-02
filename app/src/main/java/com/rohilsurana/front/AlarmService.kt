@@ -1,4 +1,4 @@
-package com.example.ttsalarm
+package com.rohilsurana.front
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -31,7 +31,7 @@ class AlarmService : Service() {
 
     companion object {
         private const val TAG = "AlarmService"
-        private const val CHANNEL_ID = "TtsAlarmChannel"
+        private const val CHANNEL_ID = "FrontAlarmChannel"
         private const val NOTIFICATION_ID = 42
         private const val FETCH_TIMEOUT_MS = 5000 // 5 seconds to fetch before fallback
     }
@@ -55,7 +55,7 @@ class AlarmService : Service() {
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
         wakeLock = pm.newWakeLock(
             PowerManager.PARTIAL_WAKE_LOCK,
-            "TtsAlarm::AlarmWakeLock"
+            "Front::AlarmWakeLock"
         ).also { it.acquire(60_000L) } // max 60s safety timeout
 
         // Read prefs
@@ -150,10 +150,10 @@ class AlarmService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "TTS Alarm",
+                "Front Alarm",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "TTS Alarm firing notification"
+                description = "Front alarm firing notification"
             }
             val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             nm.createNotificationChannel(channel)
@@ -162,7 +162,7 @@ class AlarmService : Service() {
 
     private fun buildNotification(contentText: String) =
         NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("TTS Alarm")
+            .setContentTitle("Front")
             .setContentText(contentText)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
