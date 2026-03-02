@@ -57,6 +57,10 @@ fi
 echo "🔄 Converting SVG → Android vector drawable..."
 npx svg2vectordrawable -i "$TMP_SVG" -o "$OUTPUT_XML" 2>/dev/null
 
+# svg2vectordrawable omits fillColor — Android renders paths as transparent without it.
+# Inject android:fillColor="#000000" into every <path element so tinting works correctly.
+sed -i 's|<path |<path\n        android:fillColor="#000000"\n        |g' "$OUTPUT_XML"
+
 rm -f "$TMP_SVG"
 
 echo ""
