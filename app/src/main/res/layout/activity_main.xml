@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="24dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_horizontal">
+
+        <!-- Title -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🔔 TTS Alarm"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Time picker -->
+        <TimePicker
+            android:id="@+id/timePicker"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:timePickerMode="spinner"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Server URL -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Server URL (returns plain text)"
+            android:textSize="14sp"
+            android:textColor="#666666"
+            android:layout_marginBottom="4dp" />
+
+        <EditText
+            android:id="@+id/etUrl"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="https://your-server.com/alarm-text"
+            android:inputType="textUri"
+            android:singleLine="true"
+            android:layout_marginBottom="20dp" />
+
+        <!-- Fallback text -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Fallback text (used if server unreachable)"
+            android:textSize="14sp"
+            android:textColor="#666666"
+            android:layout_marginBottom="4dp" />
+
+        <EditText
+            android:id="@+id/etFallback"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Wake up! Good morning!"
+            android:inputType="textMultiLine"
+            android:minLines="2"
+            android:layout_marginBottom="28dp" />
+
+        <!-- Status -->
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="No alarm set"
+            android:textSize="16sp"
+            android:gravity="center"
+            android:layout_marginBottom="20dp" />
+
+        <!-- Set / Cancel buttons -->
+        <Button
+            android:id="@+id/btnSetAlarm"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Set Alarm"
+            android:layout_marginBottom="12dp" />
+
+        <Button
+            android:id="@+id/btnCancelAlarm"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Cancel Alarm"
+            style="@style/Widget.AppCompat.Button.Borderless" />
+
+    </LinearLayout>
+</ScrollView>
