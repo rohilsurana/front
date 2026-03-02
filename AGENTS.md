@@ -11,8 +11,8 @@ If MDC is adopted later, these components map directly to Material3 equivalents.
 
 | Name | Hex | Usage |
 |---|---|---|
-| `colorPrimary` | `#1A1A1A` | Action bar background, primary text |
-| `colorPrimaryDark` | `#111111` | Status bar |
+| `colorPrimary` | `#1A1A1A` | Primary text |
+| `colorPrimaryDark` | `#C62828` | Status bar (darker red, matches action bar) |
 | `colorAccent` | `#E53935` | Buttons, active states, error text |
 | `colorBackground` | `#F5F5F5` | Screen backgrounds |
 | `colorSurface` | `#FFFFFF` | Cards, input fields |
