@@ -5,15 +5,14 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 
-/**
- * Receives the alarm broadcast from AlarmManager.
- * Immediately hands off to AlarmService (foreground service) so we can
- * do network I/O and TTS without being killed for doing work in a receiver.
- */
 class AlarmReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
+        val alarmId = intent.getIntExtra("alarm_id", -1)
+
         val serviceIntent = Intent(context, AlarmService::class.java)
+            .putExtra("alarm_id", alarmId)
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.startForegroundService(serviceIntent)
         } else {
