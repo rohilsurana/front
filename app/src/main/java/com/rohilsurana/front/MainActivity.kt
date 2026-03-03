@@ -1,10 +1,15 @@
 package com.rohilsurana.front
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import com.rohilsurana.front.databinding.ActivityMainBinding
 import java.io.IOException
 import java.net.HttpURLConnection
@@ -16,6 +21,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private val executor = Executors.newSingleThreadExecutor()
 
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (!granted) {
+            Toast.makeText(this, "Notification permission denied — alarm notifications won't appear", Toast.LENGTH_LONG).show()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -25,6 +38,15 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnTestUrl.setOnClickListener { testUrl() }
         binding.btnSaveUrl.setOnClickListener { saveUrl() }
+
+        // Request POST_NOTIFICATIONS permission on Android 13+ if not yet granted
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
 
         // Ensure 20-min text sync is always scheduled
         TextSyncWorker.schedulePeriodic(this)

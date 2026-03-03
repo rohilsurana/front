@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
@@ -53,7 +54,12 @@ class AlarmService : Service() {
         val text     = alarm?.let { AlarmStore.getCachedText(this, it.id) } ?: fallback
 
         // Start foreground with rich notification immediately
-        startForeground(NOTIFICATION_ID, buildNotification(label, text))
+        // On API 29+ we can pass the foreground service type explicitly (required on API 34+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(NOTIFICATION_ID, buildNotification(label, text), ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
+        } else {
+            startForeground(NOTIFICATION_ID, buildNotification(label, text))
+        }
 
         Log.d(TAG, "Alarm [$alarmId] firing — label='$label', cached=${alarm != null}")
 
