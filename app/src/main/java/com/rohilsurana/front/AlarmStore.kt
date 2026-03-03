@@ -178,6 +178,16 @@ object AlarmStore {
         alarms.filter { it.enabled }.forEach { schedule(context, it) }
     }
 
+    /** Toggle a single alarm's enabled state in SharedPrefs and reschedule/cancel. */
+    fun setEnabled(context: Context, alarmId: String, enabled: Boolean) {
+        val updated = getAll(context).map {
+            if (it.id == alarmId) it.copy(enabled = enabled) else it
+        }
+        saveAll(context, updated)
+        val alarm = updated.find { it.id == alarmId } ?: return
+        if (enabled) schedule(context, alarm) else cancel(context, alarm)
+    }
+
     fun scheduleAll(context: Context) =
         getAll(context).filter { it.enabled }.forEach { schedule(context, it) }
 

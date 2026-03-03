@@ -51,7 +51,10 @@ class AlarmsActivity : AppCompatActivity() {
             setDisplayHomeAsUpEnabled(true)
         }
 
-        adapter = AlarmAdapter(alarms = AlarmStore.getAll(this).toMutableList())
+        adapter = AlarmAdapter(
+            alarms = AlarmStore.getAll(this).toMutableList(),
+            onToggle = { alarm, enabled -> handleToggle(alarm, enabled) }
+        )
         binding.rvAlarms.layoutManager = LinearLayoutManager(this)
         binding.rvAlarms.adapter = adapter
 
@@ -82,6 +85,32 @@ class AlarmsActivity : AppCompatActivity() {
     }
 
     override fun onSupportNavigateUp(): Boolean { finish(); return true }
+
+    private fun handleToggle(alarm: Alarm, enabled: Boolean) {
+        // Update locally immediately
+        AlarmStore.setEnabled(this, alarm.id, enabled)
+
+        // Persist to server in background (best-effort — local state already updated)
+        executor.execute {
+            try {
+                val baseUrl = AlarmStore.getServerUrl(this).trimEnd('/')
+                val url = java.net.URL("$baseUrl/alarms/${alarm.id}")
+                val conn = (url.openConnection() as java.net.HttpURLConnection).apply {
+                    requestMethod = "PATCH"
+                    connectTimeout = 5000
+                    readTimeout = 5000
+                    doOutput = true
+                    setRequestProperty("Content-Type", "application/json")
+                }
+                val body = """{"enabled":$enabled}""".toByteArray()
+                conn.outputStream.use { it.write(body) }
+                conn.responseCode // trigger request
+                conn.disconnect()
+            } catch (e: Exception) {
+                android.util.Log.w("AlarmsActivity", "Toggle server sync failed: ${e.message}")
+            }
+        }
+    }
 
     private fun sync() {
         if (isSyncing) return

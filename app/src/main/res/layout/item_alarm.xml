@@ -58,19 +58,12 @@
 
         </LinearLayout>
 
-        <!-- ON / OFF badge pill -->
-        <TextView
-            android:id="@+id/tvAlarmEnabled"
+        <!-- ON / OFF toggle -->
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/switchAlarmEnabled"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="ON"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:paddingTop="5dp"
-            android:paddingBottom="5dp"
-            android:background="@drawable/bg_badge_on" />
+            android:theme="@style/SwitchRedTheme" />
 
     </LinearLayout>
 </androidx.cardview.widget.CardView>

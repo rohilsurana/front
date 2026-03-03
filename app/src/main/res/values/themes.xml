@@ -19,4 +19,10 @@
     <style name="AppTheme.ActionBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar">
         <item name="colorControlNormal">#FFFFFF</item>
     </style>
+
+    <style name="SwitchRedTheme" parent="Theme.AppCompat.Light">
+        <item name="colorControlActivated">@color/colorAccent</item>
+        <item name="colorSwitchThumbNormal">#FFFFFF</item>
+        <item name="android:colorForeground">#BDBDBD</item>
+    </style>
 </resources>
