@@ -34,6 +34,13 @@ class AlarmsActivity : AppCompatActivity() {
         private const val AUTO_SYNC_INTERVAL_MS = 10_000L
     }
 
+    /** Kick off a sync immediately then schedule repeating every 10s. */
+    private fun startAutoSync() {
+        autoSyncHandler.removeCallbacks(autoSyncRunnable)   // avoid duplicate schedules
+        if (!isSyncing) sync()                               // immediate sync on open
+        autoSyncHandler.postDelayed(autoSyncRunnable, AUTO_SYNC_INTERVAL_MS)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityAlarmsBinding.inflate(layoutInflater)
@@ -54,9 +61,6 @@ class AlarmsActivity : AppCompatActivity() {
 
         binding.btnSync.setOnClickListener { sync() }
         binding.btnGrantPermission.setOnClickListener { requestExactAlarmPermission() }
-
-        // Auto-sync on open if no cached data
-        if (AlarmStore.getAll(this).isEmpty()) sync()
     }
 
     override fun onResume() {
@@ -67,8 +71,8 @@ class AlarmsActivity : AppCompatActivity() {
             // Permission just granted — reschedule any cached alarms
             AlarmStore.scheduleAll(this)
         }
-        // Start auto-sync every 10s while screen is visible
-        autoSyncHandler.postDelayed(autoSyncRunnable, AUTO_SYNC_INTERVAL_MS)
+        // Sync immediately on open, then every 10s while screen is visible
+        startAutoSync()
     }
 
     override fun onPause() {
