@@ -3,6 +3,8 @@ package com.rohilsurana.front
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
@@ -18,6 +20,19 @@ class AlarmsActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAlarmsBinding
     private lateinit var adapter: AlarmAdapter
     private val executor = Executors.newSingleThreadExecutor()
+
+    private val autoSyncHandler = Handler(Looper.getMainLooper())
+    private val autoSyncRunnable = object : Runnable {
+        override fun run() {
+            if (!isSyncing) sync()
+            autoSyncHandler.postDelayed(this, AUTO_SYNC_INTERVAL_MS)
+        }
+    }
+    private var isSyncing = false
+
+    companion object {
+        private const val AUTO_SYNC_INTERVAL_MS = 10_000L
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,17 +67,28 @@ class AlarmsActivity : AppCompatActivity() {
             // Permission just granted — reschedule any cached alarms
             AlarmStore.scheduleAll(this)
         }
+        // Start auto-sync every 10s while screen is visible
+        autoSyncHandler.postDelayed(autoSyncRunnable, AUTO_SYNC_INTERVAL_MS)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Stop auto-sync when screen is not visible
+        autoSyncHandler.removeCallbacks(autoSyncRunnable)
     }
 
     override fun onSupportNavigateUp(): Boolean { finish(); return true }
 
     private fun sync() {
+        if (isSyncing) return
+        isSyncing = true
         setSyncing(true)
 
         executor.execute {
             val result = AlarmStore.syncFromApi(this)
 
             runOnUiThread {
+                isSyncing = false
                 setSyncing(false)
                 result.fold(
                     onSuccess = { alarms ->
