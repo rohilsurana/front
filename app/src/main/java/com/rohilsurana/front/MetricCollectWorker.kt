@@ -85,29 +85,39 @@ class MetricCollectWorker(context: Context, params: WorkerParameters) : Worker(c
             return Result.success()
         }
 
+        // Reschedule FIRST — chain must survive regardless of what happens below
+        enqueue(applicationContext, metricName)
+
         // GPS needs foreground service on Android 14+ to access location from background
         if (metricName == MetricsStore.NAME_GPS && Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            setForegroundAsync(buildForegroundInfo()).get()
-        }
-
-        val point = when (metricName) {
-            MetricsStore.NAME_GPS     -> collectGps()
-            MetricsStore.NAME_BATTERY -> collectBattery()
-            else -> {
-                Log.w(TAG, "Unknown metric: $metricName")
-                null
+            try {
+                setForegroundAsync(buildForegroundInfo()).get()
+            } catch (e: Exception) {
+                Log.w(TAG, "setForegroundAsync failed (non-fatal): ${e.message}")
+                // Continue anyway — worst case GPS fix fails, chain already rescheduled
             }
         }
 
-        if (point != null) {
-            MetricsStore.appendPoint(applicationContext, point)
-            Log.d(TAG, "Collected $metricName point: ${point.fields}")
-        } else {
-            Log.w(TAG, "No point collected for $metricName — skipping this interval")
+        try {
+            val point = when (metricName) {
+                MetricsStore.NAME_GPS     -> collectGps()
+                MetricsStore.NAME_BATTERY -> collectBattery()
+                else -> { Log.w(TAG, "Unknown metric: $metricName"); null }
+            }
+
+            if (point != null) {
+                MetricsStore.appendPoint(applicationContext, point)
+                Log.d(TAG, "Collected $metricName: ${point.fields}")
+            } else {
+                Log.w(TAG, "$metricName: no point this interval")
+            }
+        } catch (e: Exception) {
+            // Collection error must never break the chain — already rescheduled above
+            val msg = "FAIL: unhandled ${e.javaClass.simpleName} — ${e.message}"
+            Log.e(TAG, "$metricName: $msg")
+            if (metricName == MetricsStore.NAME_GPS) MetricsStore.setGpsStatus(applicationContext, msg)
         }
 
-        // Reschedule at full interval delay
-        enqueue(applicationContext, metricName)
         return Result.success()
     }
 
