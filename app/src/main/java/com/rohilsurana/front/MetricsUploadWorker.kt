@@ -17,8 +17,9 @@ class MetricsUploadWorker(context: Context, params: WorkerParameters) : Worker(c
         private const val UPLOAD_INTERVAL_MIN = 20L
 
         fun enqueue(context: Context) {
+            val intervalMin = MetricsStore.getUploadInterval(context).toLong()
             val request = PeriodicWorkRequestBuilder<MetricsUploadWorker>(
-                UPLOAD_INTERVAL_MIN, TimeUnit.MINUTES
+                intervalMin, TimeUnit.MINUTES
             )
                 .setConstraints(
                     Constraints.Builder()
@@ -29,7 +30,7 @@ class MetricsUploadWorker(context: Context, params: WorkerParameters) : Worker(c
             WorkManager.getInstance(context)
                 .enqueueUniquePeriodicWork(
                     WORK_NAME,
-                    ExistingPeriodicWorkPolicy.KEEP,
+                    ExistingPeriodicWorkPolicy.REPLACE,  // replace so new interval takes effect
                     request
                 )
             Log.d(TAG, "Metrics upload worker enqueued (every ${UPLOAD_INTERVAL_MIN}m)")

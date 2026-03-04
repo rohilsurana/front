@@ -22,12 +22,15 @@ class MetricsActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMetricsBinding
 
     // Interval row views — resolved from included layouts
-    private lateinit var gpsMinus:   Button
-    private lateinit var gpsPlus:    Button
-    private lateinit var gpsValue:   TextView
-    private lateinit var battMinus:  Button
-    private lateinit var battPlus:   Button
-    private lateinit var battValue:  TextView
+    private lateinit var gpsMinus:    Button
+    private lateinit var gpsPlus:     Button
+    private lateinit var gpsValue:    TextView
+    private lateinit var battMinus:   Button
+    private lateinit var battPlus:    Button
+    private lateinit var battValue:   TextView
+    private lateinit var uploadMinus: Button
+    private lateinit var uploadPlus:  Button
+    private lateinit var uploadValue: TextView
 
     companion object {
         private const val REQUEST_LOCATION_PERMISSION = 1001
@@ -44,17 +47,22 @@ class MetricsActivity : AppCompatActivity() {
         }
 
         // Resolve included layout views
-        val gpsRow  = binding.intervalGps.root
-        val battRow = binding.intervalBattery.root
-        gpsMinus  = gpsRow.findViewById(R.id.btnMinus)
-        gpsPlus   = gpsRow.findViewById(R.id.btnPlus)
-        gpsValue  = gpsRow.findViewById(R.id.tvValue)
-        battMinus = battRow.findViewById(R.id.btnMinus)
-        battPlus  = battRow.findViewById(R.id.btnPlus)
-        battValue = battRow.findViewById(R.id.tvValue)
+        val gpsRow    = binding.intervalGps.root
+        val battRow   = binding.intervalBattery.root
+        val uploadRow = binding.intervalUpload.root
+        gpsMinus    = gpsRow.findViewById(R.id.btnMinus)
+        gpsPlus     = gpsRow.findViewById(R.id.btnPlus)
+        gpsValue    = gpsRow.findViewById(R.id.tvValue)
+        battMinus   = battRow.findViewById(R.id.btnMinus)
+        battPlus    = battRow.findViewById(R.id.btnPlus)
+        battValue   = battRow.findViewById(R.id.tvValue)
+        uploadMinus = uploadRow.findViewById(R.id.btnMinus)
+        uploadPlus  = uploadRow.findViewById(R.id.btnPlus)
+        uploadValue = uploadRow.findViewById(R.id.tvValue)
 
         setupGps()
         setupBattery()
+        setupUploadInterval()
         binding.btnGrantPermission.setOnClickListener { openAppSettings() }
     }
 
@@ -63,6 +71,7 @@ class MetricsActivity : AppCompatActivity() {
         updatePermissionBanner()
         updateIntervalDisplay(MetricsStore.NAME_GPS, gpsValue)
         updateIntervalDisplay(MetricsStore.NAME_BATTERY, battValue)
+        updateUploadIntervalDisplay()
         updateStatusCard()
     }
 
@@ -143,6 +152,32 @@ class MetricsActivity : AppCompatActivity() {
 
     private fun updateIntervalDisplay(name: String, label: TextView) {
         label.text = "${MetricsStore.getInterval(this, name)} min"
+    }
+
+    // ── Upload interval ───────────────────────────────────────────────────────
+
+    private fun setupUploadInterval() {
+        updateUploadIntervalDisplay()
+        uploadMinus.setOnClickListener {
+            val cur = MetricsStore.getUploadInterval(this)
+            if (cur > 5) {
+                MetricsStore.setUploadInterval(this, cur - 5)
+                updateUploadIntervalDisplay()
+                if (MetricsStore.anyEnabled(this)) MetricsUploadWorker.enqueue(this)
+            }
+        }
+        uploadPlus.setOnClickListener {
+            val cur = MetricsStore.getUploadInterval(this)
+            if (cur < 120) {
+                MetricsStore.setUploadInterval(this, cur + 5)
+                updateUploadIntervalDisplay()
+                if (MetricsStore.anyEnabled(this)) MetricsUploadWorker.enqueue(this)
+            }
+        }
+    }
+
+    private fun updateUploadIntervalDisplay() {
+        uploadValue.text = "${MetricsStore.getUploadInterval(this)} min"
     }
 
     // ── Status card ───────────────────────────────────────────────────────────

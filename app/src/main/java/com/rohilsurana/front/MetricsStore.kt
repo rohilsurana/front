@@ -44,10 +44,12 @@ object MetricsStore {
     private const val KEY_INTERVAL_PREFIX = "interval_"  // + name
 
     // Shared
-    private const val KEY_BUFFER         = "metrics_buffer"
-    private const val KEY_LAST_UPLOAD    = "last_upload_ms"
+    private const val KEY_BUFFER          = "metrics_buffer"
+    private const val KEY_LAST_UPLOAD     = "last_upload_ms"
+    private const val KEY_UPLOAD_INTERVAL = "upload_interval_min"
 
-    const val DEFAULT_INTERVAL_MIN = 5
+    const val DEFAULT_INTERVAL_MIN        = 5
+    const val DEFAULT_UPLOAD_INTERVAL_MIN = 20
 
     // Metric definitions
     const val NAME_GPS     = "gps"
@@ -101,6 +103,16 @@ object MetricsStore {
         prefs(context).edit().putString(KEY_BUFFER, "[]").apply()
 
     fun getBufferSize(context: Context): Int = getBufferedPoints(context).size
+
+    // ── Upload interval ───────────────────────────────────────────────────────
+
+    fun getUploadInterval(context: Context): Int =
+        prefs(context).getInt(KEY_UPLOAD_INTERVAL, DEFAULT_UPLOAD_INTERVAL_MIN)
+
+    fun setUploadInterval(context: Context, minutes: Int) =
+        prefs(context).edit()
+            .putInt(KEY_UPLOAD_INTERVAL, minutes.coerceIn(5, 120))
+            .apply()
 
     // ── Last upload ───────────────────────────────────────────────────────────
 
