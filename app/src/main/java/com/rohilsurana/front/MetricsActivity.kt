@@ -126,8 +126,8 @@ class MetricsActivity : AppCompatActivity() {
     private fun onMetricToggled(name: String, enabled: Boolean) {
         MetricsStore.setEnabled(this, name, enabled)
         if (enabled) {
-            MetricCollectWorker.enqueue(this, name)
-            MetricsUploadWorker.enqueue(this)   // idempotent — KEEP policy
+            MetricCollectWorker.enqueueNow(this, name)  // immediate first collection
+            MetricsUploadWorker.enqueue(this)
         } else {
             MetricCollectWorker.cancel(this, name)
             // Upload worker stays alive — still uploads buffered points

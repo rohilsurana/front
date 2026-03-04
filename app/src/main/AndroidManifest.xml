@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Network access to fetch alarm text -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -64,6 +65,12 @@
             android:name=".MetricsActivity"
             android:exported="false"
             android:parentActivityName=".MainActivity" />
+
+        <!-- Foreground service used by MetricCollectWorker on Android 14+ for background location -->
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="location"
+            tools:node="merge" />
 
     </application>
 </manifest>
