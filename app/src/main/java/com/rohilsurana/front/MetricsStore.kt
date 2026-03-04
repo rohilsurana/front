@@ -5,21 +5,32 @@ import android.util.Log
 import org.json.JSONArray
 import org.json.JSONObject
 
-data class GpsPoint(val ts: Long, val lat: Double, val lng: Double, val accuracy: Float) {
+data class MetricPoint(
+    val type: String,   // "location", "percentage", etc.
+    val name: String,   // "gps", "battery", etc.
+    val ts: Long,
+    val fields: Map<String, Any>  // type-specific fields, merged flat into JSON
+) {
     fun toJson(): JSONObject = JSONObject().apply {
+        put("type", type)
+        put("name", name)
         put("ts", ts)
-        put("lat", lat)
-        put("lng", lng)
-        put("accuracy", accuracy.toDouble())
+        fields.forEach { (k, v) -> put(k, v) }
     }
 
     companion object {
-        fun fromJson(o: JSONObject) = GpsPoint(
-            ts = o.getLong("ts"),
-            lat = o.getDouble("lat"),
-            lng = o.getDouble("lng"),
-            accuracy = o.getDouble("accuracy").toFloat()
-        )
+        fun fromJson(o: JSONObject): MetricPoint {
+            val type = o.getString("type")
+            val name = o.getString("name")
+            val ts   = o.getLong("ts")
+            val fields = mutableMapOf<String, Any>()
+            o.keys().forEach { key ->
+                if (key != "type" && key != "name" && key != "ts") {
+                    fields[key] = o.get(key)
+                }
+            }
+            return MetricPoint(type, name, ts, fields)
+        }
     }
 }
 
@@ -28,62 +39,76 @@ object MetricsStore {
     private const val TAG = "MetricsStore"
     private const val PREFS_NAME = "FrontMetricsPrefs"
 
-    private const val KEY_GPS_ENABLED       = "gps_enabled"
-    private const val KEY_GPS_INTERVAL_MIN  = "gps_interval_min"
-    private const val KEY_GPS_BUFFER        = "gps_buffer"
-    private const val KEY_GPS_LAST_UPLOAD   = "gps_last_upload_ms"
+    // Per-metric keys (appended with metric name)
+    private const val KEY_ENABLED_PREFIX  = "enabled_"   // + name
+    private const val KEY_INTERVAL_PREFIX = "interval_"  // + name
 
-    private const val DEFAULT_INTERVAL_MIN = 5
+    // Shared
+    private const val KEY_BUFFER         = "metrics_buffer"
+    private const val KEY_LAST_UPLOAD    = "last_upload_ms"
 
-    // ── GPS enabled toggle ────────────────────────────────────────────────────
+    const val DEFAULT_INTERVAL_MIN = 5
 
-    fun isGpsEnabled(context: Context): Boolean =
-        prefs(context).getBoolean(KEY_GPS_ENABLED, false)
+    // Metric definitions
+    const val NAME_GPS     = "gps"
+    const val NAME_BATTERY = "battery"
+    const val TYPE_LOCATION   = "location"
+    const val TYPE_PERCENTAGE = "percentage"
 
-    fun setGpsEnabled(context: Context, enabled: Boolean) =
-        prefs(context).edit().putBoolean(KEY_GPS_ENABLED, enabled).apply()
+    // ── Per-metric toggle ─────────────────────────────────────────────────────
 
-    // ── Interval ──────────────────────────────────────────────────────────────
+    fun isEnabled(context: Context, name: String): Boolean =
+        prefs(context).getBoolean(KEY_ENABLED_PREFIX + name, false)
 
-    fun getIntervalMinutes(context: Context): Int =
-        prefs(context).getInt(KEY_GPS_INTERVAL_MIN, DEFAULT_INTERVAL_MIN)
+    fun setEnabled(context: Context, name: String, enabled: Boolean) =
+        prefs(context).edit().putBoolean(KEY_ENABLED_PREFIX + name, enabled).apply()
 
-    fun setIntervalMinutes(context: Context, minutes: Int) =
-        prefs(context).edit().putInt(KEY_GPS_INTERVAL_MIN, minutes.coerceIn(1, 60)).apply()
+    fun anyEnabled(context: Context): Boolean =
+        listOf(NAME_GPS, NAME_BATTERY).any { isEnabled(context, it) }
 
-    // ── Point buffer ──────────────────────────────────────────────────────────
+    // ── Per-metric interval ───────────────────────────────────────────────────
 
-    fun getBufferedPoints(context: Context): List<GpsPoint> {
-        val json = prefs(context).getString(KEY_GPS_BUFFER, "[]") ?: "[]"
+    fun getInterval(context: Context, name: String): Int =
+        prefs(context).getInt(KEY_INTERVAL_PREFIX + name, DEFAULT_INTERVAL_MIN)
+
+    fun setInterval(context: Context, name: String, minutes: Int) =
+        prefs(context).edit()
+            .putInt(KEY_INTERVAL_PREFIX + name, minutes.coerceIn(1, 60))
+            .apply()
+
+    // ── Unified buffer ────────────────────────────────────────────────────────
+
+    fun getBufferedPoints(context: Context): List<MetricPoint> {
+        val json = prefs(context).getString(KEY_BUFFER, "[]") ?: "[]"
         return try {
             val arr = JSONArray(json)
-            (0 until arr.length()).map { GpsPoint.fromJson(arr.getJSONObject(it)) }
+            (0 until arr.length()).map { MetricPoint.fromJson(arr.getJSONObject(it)) }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to parse GPS buffer: ${e.message}")
+            Log.e(TAG, "Failed to parse metrics buffer: ${e.message}")
             emptyList()
         }
     }
 
-    fun appendPoint(context: Context, point: GpsPoint) {
+    fun appendPoint(context: Context, point: MetricPoint) {
         val points = getBufferedPoints(context).toMutableList()
         points.add(point)
         val arr = JSONArray().also { a -> points.forEach { a.put(it.toJson()) } }
-        prefs(context).edit().putString(KEY_GPS_BUFFER, arr.toString()).apply()
-        Log.d(TAG, "Buffered GPS point: ${point.lat},${point.lng} — total ${points.size}")
+        prefs(context).edit().putString(KEY_BUFFER, arr.toString()).apply()
+        Log.d(TAG, "Buffered ${point.name} point — total ${points.size}")
     }
 
     fun clearBuffer(context: Context) =
-        prefs(context).edit().putString(KEY_GPS_BUFFER, "[]").apply()
+        prefs(context).edit().putString(KEY_BUFFER, "[]").apply()
 
     fun getBufferSize(context: Context): Int = getBufferedPoints(context).size
 
-    // ── Last upload timestamp ─────────────────────────────────────────────────
+    // ── Last upload ───────────────────────────────────────────────────────────
 
     fun getLastUploadMs(context: Context): Long =
-        prefs(context).getLong(KEY_GPS_LAST_UPLOAD, 0L)
+        prefs(context).getLong(KEY_LAST_UPLOAD, 0L)
 
     fun setLastUploadMs(context: Context, ms: Long) =
-        prefs(context).edit().putLong(KEY_GPS_LAST_UPLOAD, ms).apply()
+        prefs(context).edit().putLong(KEY_LAST_UPLOAD, ms).apply()
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 

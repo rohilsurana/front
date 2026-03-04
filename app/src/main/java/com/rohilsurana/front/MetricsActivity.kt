@@ -7,7 +7,10 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.view.View
+import android.widget.Button
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SwitchCompat
 import androidx.core.app.ActivityCompat
 import com.rohilsurana.front.databinding.ActivityMetricsBinding
 import java.text.SimpleDateFormat
@@ -17,6 +20,14 @@ import java.util.Locale
 class MetricsActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMetricsBinding
+
+    // Interval row views — resolved from included layouts
+    private lateinit var gpsMinus:   Button
+    private lateinit var gpsPlus:    Button
+    private lateinit var gpsValue:   TextView
+    private lateinit var battMinus:  Button
+    private lateinit var battPlus:   Button
+    private lateinit var battValue:  TextView
 
     companion object {
         private const val REQUEST_LOCATION_PERMISSION = 1001
@@ -32,93 +43,124 @@ class MetricsActivity : AppCompatActivity() {
             setDisplayHomeAsUpEnabled(true)
         }
 
-        setupToggle()
-        setupIntervalButtons()
+        // Resolve included layout views
+        val gpsRow  = binding.intervalGps.root
+        val battRow = binding.intervalBattery.root
+        gpsMinus  = gpsRow.findViewById(R.id.btnMinus)
+        gpsPlus   = gpsRow.findViewById(R.id.btnPlus)
+        gpsValue  = gpsRow.findViewById(R.id.tvValue)
+        battMinus = battRow.findViewById(R.id.btnMinus)
+        battPlus  = battRow.findViewById(R.id.btnPlus)
+        battValue = battRow.findViewById(R.id.tvValue)
+
+        setupGps()
+        setupBattery()
         binding.btnGrantPermission.setOnClickListener { openAppSettings() }
     }
 
     override fun onResume() {
         super.onResume()
         updatePermissionBanner()
-        updateIntervalDisplay()
+        updateIntervalDisplay(MetricsStore.NAME_GPS, gpsValue)
+        updateIntervalDisplay(MetricsStore.NAME_BATTERY, battValue)
         updateStatusCard()
     }
 
     override fun onSupportNavigateUp(): Boolean { finish(); return true }
 
-    // ── Toggle ────────────────────────────────────────────────────────────────
+    // ── GPS ───────────────────────────────────────────────────────────────────
 
-    private fun setupToggle() {
-        val enabled = MetricsStore.isGpsEnabled(this)
+    private fun setupGps() {
+        val enabled = MetricsStore.isEnabled(this, MetricsStore.NAME_GPS)
         binding.switchGpsEnabled.isChecked = enabled
-        setIntervalVisible(enabled)
-        setStatusVisible(enabled)
+        setIntervalVisible(binding.intervalGps.root, enabled)
 
         binding.switchGpsEnabled.setOnCheckedChangeListener { _, checked ->
             if (checked && !hasLocationPermission()) {
-                // Ask for permission — revert toggle until granted
                 binding.switchGpsEnabled.isChecked = false
                 requestLocationPermission()
                 return@setOnCheckedChangeListener
             }
-            MetricsStore.setGpsEnabled(this, checked)
-            if (checked) {
-                GpsWorker.enqueue(this)
-                GpsUploadWorker.enqueue(this)
-            } else {
-                GpsWorker.cancel(this)
-                // GpsUploadWorker keeps running — it checks the flag and skips if disabled
+            onMetricToggled(MetricsStore.NAME_GPS, checked)
+            setIntervalVisible(binding.intervalGps.root, checked)
+        }
+
+        setupIntervalButtons(MetricsStore.NAME_GPS, gpsMinus, gpsPlus, gpsValue)
+    }
+
+    // ── Battery ───────────────────────────────────────────────────────────────
+
+    private fun setupBattery() {
+        val enabled = MetricsStore.isEnabled(this, MetricsStore.NAME_BATTERY)
+        binding.switchBatteryEnabled.isChecked = enabled
+        setIntervalVisible(binding.intervalBattery.root, enabled)
+
+        binding.switchBatteryEnabled.setOnCheckedChangeListener { _, checked ->
+            onMetricToggled(MetricsStore.NAME_BATTERY, checked)
+            setIntervalVisible(binding.intervalBattery.root, checked)
+        }
+
+        setupIntervalButtons(MetricsStore.NAME_BATTERY, battMinus, battPlus, battValue)
+    }
+
+    // ── Shared metric helpers ─────────────────────────────────────────────────
+
+    private fun onMetricToggled(name: String, enabled: Boolean) {
+        MetricsStore.setEnabled(this, name, enabled)
+        if (enabled) {
+            MetricCollectWorker.enqueue(this, name)
+            MetricsUploadWorker.enqueue(this)   // idempotent — KEEP policy
+        } else {
+            MetricCollectWorker.cancel(this, name)
+            // Upload worker stays alive — still uploads buffered points
+        }
+        updateStatusCard()
+    }
+
+    private fun setupIntervalButtons(
+        name: String,
+        minus: Button,
+        plus: Button,
+        valueLabel: TextView
+    ) {
+        minus.setOnClickListener {
+            val cur = MetricsStore.getInterval(this, name)
+            if (cur > 1) {
+                MetricsStore.setInterval(this, name, cur - 1)
+                updateIntervalDisplay(name, valueLabel)
+                if (MetricsStore.isEnabled(this, name)) MetricCollectWorker.enqueue(this, name)
             }
-            setIntervalVisible(checked)
-            setStatusVisible(checked)
-            updateStatusCard()
+        }
+        plus.setOnClickListener {
+            val cur = MetricsStore.getInterval(this, name)
+            if (cur < 60) {
+                MetricsStore.setInterval(this, name, cur + 1)
+                updateIntervalDisplay(name, valueLabel)
+                if (MetricsStore.isEnabled(this, name)) MetricCollectWorker.enqueue(this, name)
+            }
         }
     }
 
-    // ── Interval buttons ──────────────────────────────────────────────────────
-
-    private fun setupIntervalButtons() {
-        binding.btnIntervalMinus.setOnClickListener {
-            val current = MetricsStore.getIntervalMinutes(this)
-            if (current > 1) {
-                MetricsStore.setIntervalMinutes(this, current - 1)
-                updateIntervalDisplay()
-                // Re-enqueue with new interval if enabled
-                if (MetricsStore.isGpsEnabled(this)) GpsWorker.enqueue(this)
-            }
-        }
-        binding.btnIntervalPlus.setOnClickListener {
-            val current = MetricsStore.getIntervalMinutes(this)
-            if (current < 60) {
-                MetricsStore.setIntervalMinutes(this, current + 1)
-                updateIntervalDisplay()
-                if (MetricsStore.isGpsEnabled(this)) GpsWorker.enqueue(this)
-            }
-        }
-    }
-
-    private fun updateIntervalDisplay() {
-        val min = MetricsStore.getIntervalMinutes(this)
-        binding.tvIntervalValue.text = "$min min"
+    private fun updateIntervalDisplay(name: String, label: TextView) {
+        label.text = "${MetricsStore.getInterval(this, name)} min"
     }
 
     // ── Status card ───────────────────────────────────────────────────────────
 
     private fun updateStatusCard() {
+        val anyEnabled = MetricsStore.anyEnabled(this)
+        binding.cardStatus.visibility = if (anyEnabled) View.VISIBLE else View.GONE
+
         val buffered = MetricsStore.getBufferSize(this)
         binding.tvBufferStatus.text = when (buffered) {
-            0 -> "No points buffered"
-            1 -> "1 point buffered"
+            0    -> "No points buffered"
+            1    -> "1 point buffered"
             else -> "$buffered points buffered"
         }
 
-        val lastUploadMs = MetricsStore.getLastUploadMs(this)
-        binding.tvLastUpload.text = if (lastUploadMs == 0L) {
-            "Never uploaded"
-        } else {
-            val fmt = SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault())
-            "Last upload: ${fmt.format(Date(lastUploadMs))}"
-        }
+        val lastMs = MetricsStore.getLastUploadMs(this)
+        binding.tvLastUpload.text = if (lastMs == 0L) "Never uploaded"
+        else "Last upload: ${SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault()).format(Date(lastMs))}"
     }
 
     // ── Permissions ───────────────────────────────────────────────────────────
@@ -153,7 +195,6 @@ class MetricsActivity : AppCompatActivity() {
             grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED
         ) {
             updatePermissionBanner()
-            // Re-enable toggle now that permission is granted
             binding.switchGpsEnabled.isChecked = true
         }
     }
@@ -168,11 +209,7 @@ class MetricsActivity : AppCompatActivity() {
 
     // ── Visibility helpers ────────────────────────────────────────────────────
 
-    private fun setIntervalVisible(visible: Boolean) {
-        binding.layoutInterval.visibility = if (visible) View.VISIBLE else View.GONE
-    }
-
-    private fun setStatusVisible(visible: Boolean) {
-        binding.cardStatus.visibility = if (visible) View.VISIBLE else View.GONE
+    private fun setIntervalVisible(view: View, visible: Boolean) {
+        view.visibility = if (visible) View.VISIBLE else View.GONE
     }
 }

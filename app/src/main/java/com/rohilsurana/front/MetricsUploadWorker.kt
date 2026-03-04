@@ -9,15 +9,15 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.TimeUnit
 
-class GpsUploadWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
+class MetricsUploadWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
 
     companion object {
-        private const val TAG = "GpsUploadWorker"
-        const val WORK_NAME = "gps_upload"
+        private const val TAG = "MetricsUploadWorker"
+        const val WORK_NAME = "metrics_upload"
         private const val UPLOAD_INTERVAL_MIN = 20L
 
         fun enqueue(context: Context) {
-            val request = PeriodicWorkRequestBuilder<GpsUploadWorker>(
+            val request = PeriodicWorkRequestBuilder<MetricsUploadWorker>(
                 UPLOAD_INTERVAL_MIN, TimeUnit.MINUTES
             )
                 .setConstraints(
@@ -32,19 +32,14 @@ class GpsUploadWorker(context: Context, params: WorkerParameters) : Worker(conte
                     ExistingPeriodicWorkPolicy.KEEP,
                     request
                 )
-            Log.d(TAG, "GPS upload worker enqueued (every ${UPLOAD_INTERVAL_MIN}m)")
+            Log.d(TAG, "Metrics upload worker enqueued (every ${UPLOAD_INTERVAL_MIN}m)")
         }
     }
 
     override fun doWork(): Result {
-        if (!MetricsStore.isGpsEnabled(applicationContext)) {
-            Log.d(TAG, "GPS disabled — skipping upload (keeping worker alive)")
-            return Result.success()
-        }
-
         val points = MetricsStore.getBufferedPoints(applicationContext)
         if (points.isEmpty()) {
-            Log.d(TAG, "No points to upload")
+            Log.d(TAG, "Nothing to upload")
             return Result.success()
         }
 
@@ -53,19 +48,19 @@ class GpsUploadWorker(context: Context, params: WorkerParameters) : Worker(conte
         ).getString(AlarmStore.KEY_SERVER_URL, "") ?: ""
 
         if (baseUrl.isEmpty()) {
-            Log.w(TAG, "No server URL configured — skipping upload")
+            Log.w(TAG, "No server URL — skipping upload")
             return Result.success()
         }
 
         return try {
             val body = JSONObject().apply {
-                put("points", JSONArray().also { arr ->
+                put("metrics", JSONArray().also { arr ->
                     points.forEach { arr.put(it.toJson()) }
                 })
             }.toString().toByteArray()
 
-            val url = URL("${baseUrl.trimEnd('/')}/metrics/gps")
-            val conn = (url.openConnection() as HttpURLConnection).apply {
+            val conn = (URL("${baseUrl.trimEnd('/')}/metrics").openConnection()
+                    as HttpURLConnection).apply {
                 requestMethod = "POST"
                 connectTimeout = 10_000
                 readTimeout = 10_000
@@ -74,7 +69,6 @@ class GpsUploadWorker(context: Context, params: WorkerParameters) : Worker(conte
                 setRequestProperty("Content-Length", body.size.toString())
             }
             conn.outputStream.use { it.write(body) }
-
             val code = conn.responseCode
             conn.disconnect()
 
