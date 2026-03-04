@@ -166,6 +166,7 @@ class MetricsActivity : AppCompatActivity() {
     // ── Upload interval ───────────────────────────────────────────────────────
 
     private fun setupUploadInterval() {
+        binding.intervalUpload.root.findViewById<TextView>(R.id.tvLabel).text = "Upload every"
         updateUploadIntervalDisplay()
         uploadMinus.setOnClickListener {
             val cur = MetricsStore.getUploadInterval(this)
