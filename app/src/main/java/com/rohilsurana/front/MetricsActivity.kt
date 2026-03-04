@@ -4,11 +4,14 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.View
 import android.widget.Button
+import android.widget.ScrollView
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
 import androidx.core.app.ActivityCompat
@@ -33,7 +36,8 @@ class MetricsActivity : AppCompatActivity() {
     private lateinit var uploadValue: TextView
 
     companion object {
-        private const val REQUEST_LOCATION_PERMISSION = 1001
+        private const val REQUEST_LOCATION_PERMISSION      = 1001
+        private const val REQUEST_BACKGROUND_LOCATION      = 1002
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -85,10 +89,15 @@ class MetricsActivity : AppCompatActivity() {
         setIntervalVisible(binding.intervalGps.root, enabled)
 
         binding.switchGpsEnabled.setOnCheckedChangeListener { _, checked ->
-            if (checked && !hasLocationPermission()) {
+            if (checked && !hasFineLocationPermission()) {
                 binding.switchGpsEnabled.isChecked = false
                 requestLocationPermission()
                 return@setOnCheckedChangeListener
+            }
+            if (checked && !hasBackgroundLocationPermission()) {
+                // Fine location granted but not background — still allow toggle,
+                // but prompt user to upgrade. Worker will fall back to foreground fixes.
+                requestBackgroundLocationPermission()
             }
             onMetricToggled(MetricsStore.NAME_GPS, checked)
             setIntervalVisible(binding.intervalGps.root, checked)
@@ -189,24 +198,75 @@ class MetricsActivity : AppCompatActivity() {
         val buffered = MetricsStore.getBufferSize(this)
         binding.tvBufferStatus.text = when (buffered) {
             0    -> "No points buffered"
-            1    -> "1 point buffered"
-            else -> "$buffered points buffered"
+            1    -> "1 point buffered · tap to inspect"
+            else -> "$buffered points buffered · tap to inspect"
         }
+
+        binding.tvBufferStatus.setOnClickListener { showBufferDebugDialog() }
 
         val lastMs = MetricsStore.getLastUploadMs(this)
         binding.tvLastUpload.text = if (lastMs == 0L) "Never uploaded"
         else "Last upload: ${SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault()).format(Date(lastMs))}"
     }
 
+    private fun showBufferDebugDialog() {
+        val points = MetricsStore.getBufferedPoints(this)
+
+        val text = if (points.isEmpty()) {
+            "Buffer is empty."
+        } else {
+            points.joinToString("\n\n") { p ->
+                val ts = SimpleDateFormat("dd MMM HH:mm:ss", Locale.getDefault()).format(Date(p.ts))
+                val fields = p.fields.entries.joinToString(", ") { "${it.key}=${it.value}" }
+                "[${p.type}/${p.name}] $ts\n$fields"
+            }
+        }
+
+        val tv = TextView(this).apply {
+            this.text = text
+            textSize = 12f
+            typeface = android.graphics.Typeface.MONOSPACE
+            setPadding(48, 32, 48, 32)
+        }
+        val scroll = ScrollView(this).apply { addView(tv) }
+
+        AlertDialog.Builder(this)
+            .setTitle("Buffered points (${points.size})")
+            .setView(scroll)
+            .setPositiveButton("OK", null)
+            .setNeutralButton("Clear buffer") { _, _ ->
+                MetricsStore.clearBuffer(this)
+                updateStatusCard()
+            }
+            .show()
+    }
+
     // ── Permissions ───────────────────────────────────────────────────────────
 
-    private fun hasLocationPermission(): Boolean =
+    private fun hasFineLocationPermission(): Boolean =
         ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) ==
                 PackageManager.PERMISSION_GRANTED
+
+    private fun hasBackgroundLocationPermission(): Boolean =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ActivityCompat.checkSelfPermission(
+                this, Manifest.permission.ACCESS_BACKGROUND_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        } else true  // < Android 10 — background location bundled with fine
+
+    private fun hasLocationPermission(): Boolean =
+        hasFineLocationPermission() && hasBackgroundLocationPermission()
 
     private fun updatePermissionBanner() {
         binding.layoutPermissionBanner.visibility =
             if (!hasLocationPermission()) View.VISIBLE else View.GONE
+
+        // Update banner text based on which permission is missing
+        if (!hasFineLocationPermission()) {
+            binding.layoutPermissionBanner.findViewById<TextView>(
+                android.R.id.text1
+            )  // falls back to default banner text — fine
+        }
     }
 
     private fun requestLocationPermission() {
@@ -220,17 +280,38 @@ class MetricsActivity : AppCompatActivity() {
         )
     }
 
+    private fun requestBackgroundLocationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            AlertDialog.Builder(this)
+                .setTitle("Background location needed")
+                .setMessage(
+                    "To record your GPS location while the app is in the background, " +
+                    "please set location access to \"Allow all the time\" in settings."
+                )
+                .setPositiveButton("Open settings") { _, _ -> openAppSettings() }
+                .setNegativeButton("Cancel", null)
+                .show()
+        }
+    }
+
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_LOCATION_PERMISSION &&
-            grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED
-        ) {
-            updatePermissionBanner()
-            binding.switchGpsEnabled.isChecked = true
+        when (requestCode) {
+            REQUEST_LOCATION_PERMISSION -> {
+                if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
+                    updatePermissionBanner()
+                    // Now ask for background location separately (Android 10+ requirement)
+                    if (!hasBackgroundLocationPermission()) {
+                        requestBackgroundLocationPermission()
+                    } else {
+                        binding.switchGpsEnabled.isChecked = true
+                    }
+                }
+            }
         }
     }
 
