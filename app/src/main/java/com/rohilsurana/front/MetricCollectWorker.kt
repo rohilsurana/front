@@ -15,6 +15,7 @@ import android.location.LocationManager
 import android.os.BatteryManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Looper
 import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
@@ -181,7 +182,7 @@ class MetricCollectWorker(context: Context, params: WorkerParameters) : Worker(c
 
         return try {
             @Suppress("MissingPermission")
-            locationManager.requestLocationUpdates(provider, 0L, 0f, listener)
+            locationManager.requestLocationUpdates(provider, 0L, 0f, listener, Looper.getMainLooper())
             MetricsStore.setGpsStatus(applicationContext, "Waiting for fix via $provider (30s)...")
             Log.d(TAG, "GPS: waiting for fix (30s timeout)...")
             val gotFix = latch.await(30_000L, TimeUnit.MILLISECONDS)
