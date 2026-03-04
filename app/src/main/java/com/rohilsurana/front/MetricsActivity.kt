@@ -230,15 +230,29 @@ class MetricsActivity : AppCompatActivity() {
     private fun showBufferDebugDialog() {
         val points = MetricsStore.getBufferedPoints(this)
 
-        val text = if (points.isEmpty()) {
-            "Buffer is empty."
-        } else {
-            points.joinToString("\n\n") { p ->
-                val ts = SimpleDateFormat("dd MMM HH:mm:ss", Locale.getDefault()).format(Date(p.ts))
-                val fields = p.fields.entries.joinToString(", ") { "${it.key}=${it.value}" }
-                "[${p.type}/${p.name}] $ts\n$fields"
-            }
+        val gpsStatus    = MetricsStore.getGpsStatus(this)
+        val uploadStatus = MetricsStore.getUploadStatus(this)
+        val serverUrl    = this.getSharedPreferences(AlarmStore.PREFS_NAME, MODE_PRIVATE)
+            .getString(AlarmStore.KEY_SERVER_URL, "(not set)") ?: "(not set)"
+
+        val bufferText = if (points.isEmpty()) "Buffer is empty."
+        else points.joinToString("\n\n") { p ->
+            val ts = SimpleDateFormat("dd MMM HH:mm:ss", Locale.getDefault()).format(Date(p.ts))
+            val fields = p.fields.entries.joinToString(", ") { "${it.key}=${it.value}" }
+            "[${p.type}/${p.name}] $ts\n$fields"
         }
+
+        val text = """
+            |── GPS status ──
+            |$gpsStatus
+            |
+            |── Upload status ──
+            |$uploadStatus
+            |Server: $serverUrl
+            |
+            |── Buffer (${points.size} pts) ──
+            |$bufferText
+        """.trimMargin()
 
         val tv = TextView(this).apply {
             this.text = text

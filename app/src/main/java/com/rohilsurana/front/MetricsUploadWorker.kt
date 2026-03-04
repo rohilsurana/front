@@ -49,9 +49,13 @@ class MetricsUploadWorker(context: Context, params: WorkerParameters) : Worker(c
         ).getString(AlarmStore.KEY_SERVER_URL, "") ?: ""
 
         if (baseUrl.isEmpty()) {
+            MetricsStore.setUploadStatus(applicationContext, "FAIL: no server URL configured")
             Log.w(TAG, "No server URL — skipping upload")
             return Result.success()
         }
+
+        val uploadUrl = "${baseUrl.trimEnd('/')}/metrics"
+        MetricsStore.setUploadStatus(applicationContext, "Attempting → $uploadUrl (${points.size} pts)...")
 
         return try {
             val body = JSONObject().apply {
@@ -60,7 +64,7 @@ class MetricsUploadWorker(context: Context, params: WorkerParameters) : Worker(c
                 })
             }.toString().toByteArray()
 
-            val conn = (URL("${baseUrl.trimEnd('/')}/metrics").openConnection()
+            val conn = (URL(uploadUrl).openConnection()
                     as HttpURLConnection).apply {
                 requestMethod = "POST"
                 connectTimeout = 10_000
@@ -74,16 +78,22 @@ class MetricsUploadWorker(context: Context, params: WorkerParameters) : Worker(c
             conn.disconnect()
 
             if (code == HttpURLConnection.HTTP_OK) {
-                Log.d(TAG, "Uploaded ${points.size} points — clearing buffer")
+                val msg = "OK: uploaded ${points.size} pts to $uploadUrl"
+                Log.d(TAG, msg)
+                MetricsStore.setUploadStatus(applicationContext, msg)
                 MetricsStore.clearBuffer(applicationContext)
                 MetricsStore.setLastUploadMs(applicationContext, System.currentTimeMillis())
                 Result.success()
             } else {
-                Log.w(TAG, "Upload returned HTTP $code — keeping buffer for retry")
+                val msg = "FAIL: HTTP $code from $uploadUrl"
+                Log.w(TAG, msg)
+                MetricsStore.setUploadStatus(applicationContext, msg)
                 Result.retry()
             }
         } catch (e: Exception) {
-            Log.w(TAG, "Upload failed: ${e.message} — keeping buffer for retry")
+            val msg = "FAIL: ${e.javaClass.simpleName} — ${e.message}"
+            Log.w(TAG, "Upload: $msg")
+            MetricsStore.setUploadStatus(applicationContext, msg)
             Result.retry()
         }
     }

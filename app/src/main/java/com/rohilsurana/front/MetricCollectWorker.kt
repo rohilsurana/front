@@ -122,20 +122,24 @@ class MetricCollectWorker(context: Context, params: WorkerParameters) : Worker(c
         ) == PackageManager.PERMISSION_GRANTED
 
         if (!hasFine && !hasCoarse) {
-            Log.e(TAG, "GPS: no location permission — skipping")
+            val msg = "FAIL: no location permission (fine=$hasFine coarse=$hasCoarse)"
+            Log.e(TAG, "GPS: $msg")
+            MetricsStore.setGpsStatus(applicationContext, msg)
             return null
         }
 
         val locationManager = applicationContext.getSystemService(Context.LOCATION_SERVICE)
             as LocationManager
 
+        val gpsEnabled  = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+        val netEnabled  = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
         val provider = when {
-            locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ->
-                LocationManager.GPS_PROVIDER
-            locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER) ->
-                LocationManager.NETWORK_PROVIDER
+            gpsEnabled  -> LocationManager.GPS_PROVIDER
+            netEnabled  -> LocationManager.NETWORK_PROVIDER
             else -> {
-                Log.w(TAG, "GPS: no provider enabled")
+                val msg = "FAIL: no provider enabled (gps=$gpsEnabled network=$netEnabled)"
+                Log.w(TAG, "GPS: $msg")
+                MetricsStore.setGpsStatus(applicationContext, msg)
                 return null
             }
         }
@@ -147,7 +151,9 @@ class MetricCollectWorker(context: Context, params: WorkerParameters) : Worker(c
             @Suppress("MissingPermission")
             val last = locationManager.getLastKnownLocation(provider)
             if (last != null && System.currentTimeMillis() - last.time < 5 * 60 * 1000) {
-                Log.d(TAG, "GPS: using cached location (age=${System.currentTimeMillis() - last.time}ms)")
+                val msg = "OK (cached): ${last.latitude},${last.longitude} acc=${last.accuracy}m"
+                Log.d(TAG, "GPS: $msg")
+                MetricsStore.setGpsStatus(applicationContext, msg)
                 return gpsPoint(last)
             }
         } catch (e: Exception) {
@@ -176,21 +182,30 @@ class MetricCollectWorker(context: Context, params: WorkerParameters) : Worker(c
         return try {
             @Suppress("MissingPermission")
             locationManager.requestLocationUpdates(provider, 0L, 0f, listener)
-            Log.d(TAG, "GPS: waiting for fix (10s timeout)...")
+            MetricsStore.setGpsStatus(applicationContext, "Waiting for fix via $provider (30s)...")
+            Log.d(TAG, "GPS: waiting for fix (30s timeout)...")
             val gotFix = latch.await(30_000L, TimeUnit.MILLISECONDS)
             try { locationManager.removeUpdates(listener) } catch (_: Exception) {}
             if (gotFix && location != null) {
-                Log.d(TAG, "GPS: got fix — ${location!!.latitude},${location!!.longitude}")
+                val msg = "OK: ${location!!.latitude},${location!!.longitude} acc=${location!!.accuracy}m via $provider"
+                Log.d(TAG, "GPS: $msg")
+                MetricsStore.setGpsStatus(applicationContext, msg)
             } else {
-                Log.w(TAG, "GPS: timed out waiting for fix")
+                val msg = "FAIL: timed out after 30s via $provider"
+                Log.w(TAG, "GPS: $msg")
+                MetricsStore.setGpsStatus(applicationContext, msg)
             }
             location?.let { gpsPoint(it) }
         } catch (e: SecurityException) {
-            Log.e(TAG, "GPS: SecurityException — permission denied at runtime: ${e.message}")
+            val msg = "FAIL: SecurityException — ${e.message}"
+            Log.e(TAG, "GPS: $msg")
+            MetricsStore.setGpsStatus(applicationContext, msg)
             try { locationManager.removeUpdates(listener) } catch (_: Exception) {}
             null
         } catch (e: Exception) {
-            Log.e(TAG, "GPS: unexpected error: ${e.message}")
+            val msg = "FAIL: ${e.javaClass.simpleName} — ${e.message}"
+            Log.e(TAG, "GPS: $msg")
+            MetricsStore.setGpsStatus(applicationContext, msg)
             try { locationManager.removeUpdates(listener) } catch (_: Exception) {}
             null
         }

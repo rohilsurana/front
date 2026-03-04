@@ -104,6 +104,23 @@ object MetricsStore {
 
     fun getBufferSize(context: Context): Int = getBufferedPoints(context).size
 
+    // ── Debug status (last attempt results) ───────────────────────────────────
+
+    private const val KEY_LAST_GPS_STATUS    = "last_gps_status"
+    private const val KEY_LAST_UPLOAD_STATUS = "last_upload_status"
+
+    fun setGpsStatus(context: Context, status: String) =
+        prefs(context).edit().putString(KEY_LAST_GPS_STATUS, status).apply()
+
+    fun getGpsStatus(context: Context): String =
+        prefs(context).getString(KEY_LAST_GPS_STATUS, "No attempt yet") ?: "No attempt yet"
+
+    fun setUploadStatus(context: Context, status: String) =
+        prefs(context).edit().putString(KEY_LAST_UPLOAD_STATUS, status).apply()
+
+    fun getUploadStatus(context: Context): String =
+        prefs(context).getString(KEY_LAST_UPLOAD_STATUS, "No attempt yet") ?: "No attempt yet"
+
     // ── Upload interval ───────────────────────────────────────────────────────
 
     fun getUploadInterval(context: Context): Int =
