@@ -6,6 +6,8 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.view.View
 import android.widget.Button
@@ -36,8 +38,17 @@ class MetricsActivity : AppCompatActivity() {
     private lateinit var uploadValue: TextView
 
     companion object {
-        private const val REQUEST_LOCATION_PERMISSION      = 1001
-        private const val REQUEST_BACKGROUND_LOCATION      = 1002
+        private const val REQUEST_LOCATION_PERMISSION = 1001
+        private const val REQUEST_BACKGROUND_LOCATION = 1002
+        private const val UI_REFRESH_MS               = 3_000L
+    }
+
+    private val refreshHandler = Handler(Looper.getMainLooper())
+    private val refreshRunnable = object : Runnable {
+        override fun run() {
+            updateStatusCard()
+            refreshHandler.postDelayed(this, UI_REFRESH_MS)
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -77,6 +88,12 @@ class MetricsActivity : AppCompatActivity() {
         updateIntervalDisplay(MetricsStore.NAME_BATTERY, battValue)
         updateUploadIntervalDisplay()
         updateStatusCard()
+        refreshHandler.postDelayed(refreshRunnable, UI_REFRESH_MS)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        refreshHandler.removeCallbacks(refreshRunnable)
     }
 
     override fun onSupportNavigateUp(): Boolean { finish(); return true }
@@ -238,6 +255,13 @@ class MetricsActivity : AppCompatActivity() {
             .setNeutralButton("Clear buffer") { _, _ ->
                 MetricsStore.clearBuffer(this)
                 updateStatusCard()
+            }
+            .setNegativeButton("Collect now") { _, _ ->
+                // Trigger immediate collection for all enabled metrics — bypasses WorkManager scheduling
+                if (MetricsStore.isEnabled(this, MetricsStore.NAME_GPS))
+                    MetricCollectWorker.enqueueNow(this, MetricsStore.NAME_GPS)
+                if (MetricsStore.isEnabled(this, MetricsStore.NAME_BATTERY))
+                    MetricCollectWorker.enqueueNow(this, MetricsStore.NAME_BATTERY)
             }
             .show()
     }

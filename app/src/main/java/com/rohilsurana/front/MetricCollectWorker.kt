@@ -177,7 +177,7 @@ class MetricCollectWorker(context: Context, params: WorkerParameters) : Worker(c
             @Suppress("MissingPermission")
             locationManager.requestLocationUpdates(provider, 0L, 0f, listener)
             Log.d(TAG, "GPS: waiting for fix (10s timeout)...")
-            val gotFix = latch.await(10_000L, TimeUnit.MILLISECONDS)
+            val gotFix = latch.await(30_000L, TimeUnit.MILLISECONDS)
             try { locationManager.removeUpdates(listener) } catch (_: Exception) {}
             if (gotFix && location != null) {
                 Log.d(TAG, "GPS: got fix — ${location!!.latitude},${location!!.longitude}")
