@@ -105,7 +105,7 @@ class MetricsActivity : AppCompatActivity() {
         binding.switchGpsEnabled.isChecked = enabled
         setIntervalVisible(binding.intervalGps.root, enabled)
 
-        setRowIcon(binding.intervalGps.root, R.drawable.ic_location_on)
+        setRowIcon(binding.intervalGps.root, R.drawable.ic_description)
 
         binding.switchGpsEnabled.setOnCheckedChangeListener { _, checked ->
             if (checked && !hasFineLocationPermission()) {
@@ -132,7 +132,7 @@ class MetricsActivity : AppCompatActivity() {
         binding.switchBatteryEnabled.isChecked = enabled
         setIntervalVisible(binding.intervalBattery.root, enabled)
 
-        setRowIcon(binding.intervalBattery.root, R.drawable.ic_battery_std)
+        setRowIcon(binding.intervalBattery.root, R.drawable.ic_description)
 
         binding.switchBatteryEnabled.setOnCheckedChangeListener { _, checked ->
             onMetricToggled(MetricsStore.NAME_BATTERY, checked)
@@ -196,7 +196,7 @@ class MetricsActivity : AppCompatActivity() {
     private fun setupUploadInterval() {
         binding.intervalUpload.root.apply {
             findViewById<TextView>(R.id.tvLabel).text = "Upload every"
-            setRowIcon(this, R.drawable.ic_sync)
+            setRowIcon(this, R.drawable.ic_upload)
         }
         updateUploadIntervalDisplay()
         uploadMinus.setOnClickListener {
