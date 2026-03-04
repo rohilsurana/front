@@ -105,6 +105,8 @@ class MetricsActivity : AppCompatActivity() {
         binding.switchGpsEnabled.isChecked = enabled
         setIntervalVisible(binding.intervalGps.root, enabled)
 
+        setRowIcon(binding.intervalGps.root, R.drawable.ic_location_on)
+
         binding.switchGpsEnabled.setOnCheckedChangeListener { _, checked ->
             if (checked && !hasFineLocationPermission()) {
                 binding.switchGpsEnabled.isChecked = false
@@ -130,6 +132,8 @@ class MetricsActivity : AppCompatActivity() {
         binding.switchBatteryEnabled.isChecked = enabled
         setIntervalVisible(binding.intervalBattery.root, enabled)
 
+        setRowIcon(binding.intervalBattery.root, R.drawable.ic_battery_std)
+
         binding.switchBatteryEnabled.setOnCheckedChangeListener { _, checked ->
             onMetricToggled(MetricsStore.NAME_BATTERY, checked)
             setIntervalVisible(binding.intervalBattery.root, checked)
@@ -150,6 +154,13 @@ class MetricsActivity : AppCompatActivity() {
             // Upload worker stays alive — still uploads buffered points
         }
         updateStatusCard()
+    }
+
+    private fun setRowIcon(row: View, iconRes: Int) {
+        row.findViewById<android.widget.ImageView>(R.id.ivRowIcon).apply {
+            setImageResource(iconRes)
+            visibility = View.VISIBLE
+        }
     }
 
     private fun setupIntervalButtons(
@@ -183,7 +194,10 @@ class MetricsActivity : AppCompatActivity() {
     // ── Upload interval ───────────────────────────────────────────────────────
 
     private fun setupUploadInterval() {
-        binding.intervalUpload.root.findViewById<TextView>(R.id.tvLabel).text = "Upload every"
+        binding.intervalUpload.root.apply {
+            findViewById<TextView>(R.id.tvLabel).text = "Upload every"
+            setRowIcon(this, R.drawable.ic_sync)
+        }
         updateUploadIntervalDisplay()
         uploadMinus.setOnClickListener {
             val cur = MetricsStore.getUploadInterval(this)
