@@ -9,14 +9,23 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.BatteryManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Looper
+import android.os.PowerManager
+import android.telephony.TelephonyManager
 import android.util.Log
+import android.net.wifi.WifiManager
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.work.*
@@ -100,8 +109,13 @@ class MetricCollectWorker(context: Context, params: WorkerParameters) : Worker(c
 
         try {
             val point = when (metricName) {
-                MetricsStore.NAME_GPS     -> collectGps()
-                MetricsStore.NAME_BATTERY -> collectBattery()
+                MetricsStore.NAME_GPS        -> collectGps()
+                MetricsStore.NAME_BATTERY    -> collectBattery()
+                MetricsStore.NAME_STEPS      -> collectSteps()
+                MetricsStore.NAME_ACTIVITY   -> collectActivity()
+                MetricsStore.NAME_WIFI       -> collectWifi()
+                MetricsStore.NAME_SCREEN     -> collectScreen()
+                MetricsStore.NAME_CONNECTION -> collectConnection()
                 else -> { Log.w(TAG, "Unknown metric: $metricName"); null }
             }
 
@@ -265,6 +279,141 @@ class MetricCollectWorker(context: Context, params: WorkerParameters) : Worker(c
             )
         } catch (e: Exception) {
             Log.e(TAG, "Battery collection failed: ${e.message}")
+            null
+        }
+    }
+
+    // ── Steps ─────────────────────────────────────────────────────────────────
+
+    private fun collectSteps(): MetricPoint? {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+            ActivityCompat.checkSelfPermission(applicationContext, Manifest.permission.ACTIVITY_RECOGNITION)
+                != PackageManager.PERMISSION_GRANTED) {
+            Log.w(TAG, "Steps: missing ACTIVITY_RECOGNITION permission")
+            return null
+        }
+        val sm = applicationContext.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        val sensor = sm.getDefaultSensor(Sensor.TYPE_STEP_COUNTER) ?: run {
+            Log.w(TAG, "Steps: no step counter sensor")
+            return null
+        }
+        val latch = CountDownLatch(1)
+        var total = -1L
+        val listener = object : SensorEventListener {
+            override fun onSensorChanged(e: SensorEvent) {
+                total = e.values[0].toLong(); latch.countDown(); sm.unregisterListener(this)
+            }
+            override fun onAccuracyChanged(s: Sensor?, a: Int) {}
+        }
+        sm.registerListener(listener, sensor, SensorManager.SENSOR_DELAY_NORMAL)
+        latch.await(2000, TimeUnit.MILLISECONDS)
+        sm.unregisterListener(listener)
+
+        if (total < 0) total = MetricsStore.getLastStepCount(applicationContext)
+        if (total < 0) return null
+
+        val last = MetricsStore.getLastStepCount(applicationContext)
+        val delta = if (last >= 0) (total - last).coerceAtLeast(0) else 0
+        MetricsStore.setLastStepCount(applicationContext, total)
+
+        return MetricPoint(MetricsStore.TYPE_COUNT, MetricsStore.NAME_STEPS,
+            System.currentTimeMillis(), mapOf("value" to total, "delta" to delta))
+    }
+
+    // ── Activity (inferred from step rate) ────────────────────────────────────
+
+    private fun collectActivity(): MetricPoint? {
+        val sm = applicationContext.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        val sensor = sm.getDefaultSensor(Sensor.TYPE_STEP_COUNTER) ?: return null
+
+        val latch = CountDownLatch(1)
+        var total = -1L
+        val listener = object : SensorEventListener {
+            override fun onSensorChanged(e: SensorEvent) {
+                total = e.values[0].toLong(); latch.countDown(); sm.unregisterListener(this)
+            }
+            override fun onAccuracyChanged(s: Sensor?, a: Int) {}
+        }
+        sm.registerListener(listener, sensor, SensorManager.SENSOR_DELAY_NORMAL)
+        latch.await(2000, TimeUnit.MILLISECONDS)
+        sm.unregisterListener(listener)
+
+        if (total < 0) total = MetricsStore.getLastActivityStepCount(applicationContext)
+        if (total < 0) return null
+
+        val intervalMin = MetricsStore.getInterval(applicationContext, MetricsStore.NAME_ACTIVITY).coerceAtLeast(1).toLong()
+        val last = MetricsStore.getLastActivityStepCount(applicationContext)
+        val delta = if (last >= 0) (total - last).coerceAtLeast(0) else 0
+        MetricsStore.setLastActivityStepCount(applicationContext, total)
+
+        val stepsPerMin = delta.toFloat() / intervalMin
+        val activity = when {
+            stepsPerMin >= 100 -> "running"
+            stepsPerMin >= 10  -> "walking"
+            else               -> "stationary"
+        }
+        return MetricPoint(MetricsStore.TYPE_ACTIVITY, MetricsStore.NAME_ACTIVITY,
+            System.currentTimeMillis(), mapOf("activity" to activity, "step_rate" to stepsPerMin.toInt()))
+    }
+
+    // ── WiFi ──────────────────────────────────────────────────────────────────
+
+    @Suppress("MissingPermission")
+    private fun collectWifi(): MetricPoint? {
+        return try {
+            val wm = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+            val info = wm.connectionInfo
+            val connected = info != null && info.networkId != -1
+            val ssid = info?.ssid?.trim('"') ?: ""
+            val rssi = info?.rssi ?: -999
+            MetricPoint(MetricsStore.TYPE_NETWORK, MetricsStore.NAME_WIFI,
+                System.currentTimeMillis(),
+                mapOf("connected" to connected, "ssid" to (if (connected) ssid else ""), "rssi" to rssi))
+        } catch (e: Exception) {
+            Log.e(TAG, "WiFi collection failed: ${e.message}")
+            null
+        }
+    }
+
+    // ── Screen ────────────────────────────────────────────────────────────────
+
+    private fun collectScreen(): MetricPoint? {
+        val pm = applicationContext.getSystemService(Context.POWER_SERVICE) as PowerManager
+        return MetricPoint(MetricsStore.TYPE_EVENT, MetricsStore.NAME_SCREEN,
+            System.currentTimeMillis(), mapOf("on" to pm.isInteractive))
+    }
+
+    // ── Network connection type ───────────────────────────────────────────────
+
+    @Suppress("MissingPermission")
+    private fun collectConnection(): MetricPoint? {
+        return try {
+            val cm = applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            val caps = cm.activeNetwork?.let { cm.getNetworkCapabilities(it) }
+            val type = when {
+                caps == null -> "none"
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)     -> "wifi"
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "ethernet"
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> {
+                    try {
+                        val tm = applicationContext.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+                        when (tm.dataNetworkType) {
+                            TelephonyManager.NETWORK_TYPE_NR    -> "5g"
+                            TelephonyManager.NETWORK_TYPE_LTE   -> "4g"
+                            TelephonyManager.NETWORK_TYPE_HSPAP,
+                            TelephonyManager.NETWORK_TYPE_HSPA  -> "3g"
+                            TelephonyManager.NETWORK_TYPE_EDGE,
+                            TelephonyManager.NETWORK_TYPE_GPRS  -> "2g"
+                            else -> "cellular"
+                        }
+                    } catch (_: Exception) { "cellular" }
+                }
+                else -> "other"
+            }
+            MetricPoint(MetricsStore.TYPE_NETWORK, MetricsStore.NAME_CONNECTION,
+                System.currentTimeMillis(), mapOf("type" to type))
+        } catch (e: Exception) {
+            Log.e(TAG, "Connection collection failed: ${e.message}")
             null
         }
     }

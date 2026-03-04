@@ -222,6 +222,211 @@
 
             </androidx.cardview.widget.CardView>
 
+            <!-- Steps card -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:cardPreventCornerOverlap="false"
+                app:cardUseCompatPadding="false"
+                app:cardBackgroundColor="@color/colorSurface">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="STEPS" android:textSize="11sp" android:textStyle="bold"
+                        android:letterSpacing="0.08" android:textColor="@color/colorTextSecondary"
+                        android:layout_marginBottom="16dp" />
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="horizontal" android:gravity="center_vertical">
+                        <ImageView android:layout_width="24dp" android:layout_height="24dp"
+                            android:layout_marginEnd="12dp" android:src="@drawable/ic_directions_walk"
+                            android:tint="@color/colorAccent" android:contentDescription="Steps" />
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                            android:layout_weight="1" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Count steps" android:textSize="15sp" android:textColor="@color/colorTextPrimary" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Tracks step count and delta per interval" android:textSize="12sp"
+                                android:textColor="@color/colorTextSecondary" android:layout_marginTop="2dp" />
+                        </LinearLayout>
+                        <androidx.appcompat.widget.SwitchCompat android:id="@+id/switchStepsEnabled"
+                            android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                    </LinearLayout>
+                    <include android:id="@+id/intervalSteps" layout="@layout/view_interval_row"
+                        android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp" android:visibility="gone" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Activity card -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:cardPreventCornerOverlap="false"
+                app:cardUseCompatPadding="false"
+                app:cardBackgroundColor="@color/colorSurface">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="PHYSICAL ACTIVITY" android:textSize="11sp" android:textStyle="bold"
+                        android:letterSpacing="0.08" android:textColor="@color/colorTextSecondary"
+                        android:layout_marginBottom="16dp" />
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="horizontal" android:gravity="center_vertical">
+                        <ImageView android:layout_width="24dp" android:layout_height="24dp"
+                            android:layout_marginEnd="12dp" android:src="@drawable/ic_directions_run"
+                            android:tint="@color/colorAccent" android:contentDescription="Activity" />
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                            android:layout_weight="1" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Detect activity" android:textSize="15sp" android:textColor="@color/colorTextPrimary" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Stationary / walking / running via step rate"
+                                android:textSize="12sp" android:textColor="@color/colorTextSecondary" android:layout_marginTop="2dp" />
+                        </LinearLayout>
+                        <androidx.appcompat.widget.SwitchCompat android:id="@+id/switchActivityEnabled"
+                            android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                    </LinearLayout>
+                    <include android:id="@+id/intervalActivity" layout="@layout/view_interval_row"
+                        android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp" android:visibility="gone" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- WiFi card -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:cardPreventCornerOverlap="false"
+                app:cardUseCompatPadding="false"
+                app:cardBackgroundColor="@color/colorSurface">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="WIFI" android:textSize="11sp" android:textStyle="bold"
+                        android:letterSpacing="0.08" android:textColor="@color/colorTextSecondary"
+                        android:layout_marginBottom="16dp" />
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="horizontal" android:gravity="center_vertical">
+                        <ImageView android:layout_width="24dp" android:layout_height="24dp"
+                            android:layout_marginEnd="12dp" android:src="@drawable/ic_wifi"
+                            android:tint="@color/colorAccent" android:contentDescription="WiFi" />
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                            android:layout_weight="1" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Record WiFi network" android:textSize="15sp" android:textColor="@color/colorTextPrimary" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Logs connected SSID and signal strength"
+                                android:textSize="12sp" android:textColor="@color/colorTextSecondary" android:layout_marginTop="2dp" />
+                        </LinearLayout>
+                        <androidx.appcompat.widget.SwitchCompat android:id="@+id/switchWifiEnabled"
+                            android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                    </LinearLayout>
+                    <include android:id="@+id/intervalWifi" layout="@layout/view_interval_row"
+                        android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp" android:visibility="gone" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Screen card -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:cardPreventCornerOverlap="false"
+                app:cardUseCompatPadding="false"
+                app:cardBackgroundColor="@color/colorSurface">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="SCREEN" android:textSize="11sp" android:textStyle="bold"
+                        android:letterSpacing="0.08" android:textColor="@color/colorTextSecondary"
+                        android:layout_marginBottom="16dp" />
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="horizontal" android:gravity="center_vertical">
+                        <ImageView android:layout_width="24dp" android:layout_height="24dp"
+                            android:layout_marginEnd="12dp" android:src="@drawable/ic_phone_android"
+                            android:tint="@color/colorAccent" android:contentDescription="Screen" />
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                            android:layout_weight="1" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Record screen state" android:textSize="15sp" android:textColor="@color/colorTextPrimary" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Logs whether screen is on or off"
+                                android:textSize="12sp" android:textColor="@color/colorTextSecondary" android:layout_marginTop="2dp" />
+                        </LinearLayout>
+                        <androidx.appcompat.widget.SwitchCompat android:id="@+id/switchScreenEnabled"
+                            android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                    </LinearLayout>
+                    <include android:id="@+id/intervalScreen" layout="@layout/view_interval_row"
+                        android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp" android:visibility="gone" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Network connection card -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:cardPreventCornerOverlap="false"
+                app:cardUseCompatPadding="false"
+                app:cardBackgroundColor="@color/colorSurface">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="NETWORK" android:textSize="11sp" android:textStyle="bold"
+                        android:letterSpacing="0.08" android:textColor="@color/colorTextSecondary"
+                        android:layout_marginBottom="16dp" />
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="horizontal" android:gravity="center_vertical">
+                        <ImageView android:layout_width="24dp" android:layout_height="24dp"
+                            android:layout_marginEnd="12dp" android:src="@drawable/ic_signal_cellular_alt"
+                            android:tint="@color/colorAccent" android:contentDescription="Network" />
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                            android:layout_weight="1" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Record connection type" android:textSize="15sp" android:textColor="@color/colorTextPrimary" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Logs WiFi / 4G / 5G / none"
+                                android:textSize="12sp" android:textColor="@color/colorTextSecondary" android:layout_marginTop="2dp" />
+                        </LinearLayout>
+                        <androidx.appcompat.widget.SwitchCompat android:id="@+id/switchConnectionEnabled"
+                            android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                    </LinearLayout>
+                    <include android:id="@+id/intervalConnection" layout="@layout/view_interval_row"
+                        android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp" android:visibility="gone" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
             <!-- Status card -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardStatus"

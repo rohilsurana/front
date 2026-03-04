@@ -55,6 +55,7 @@ class MetricsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMetricsBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        requestOptionalPermissions()
 
         supportActionBar?.apply {
             title = "Metrics"
@@ -77,6 +78,11 @@ class MetricsActivity : AppCompatActivity() {
 
         setupGps()
         setupBattery()
+        setupMetricCard(MetricsStore.NAME_STEPS,      binding.switchStepsEnabled,      binding.intervalSteps.root,      R.drawable.ic_directions_walk)
+        setupMetricCard(MetricsStore.NAME_ACTIVITY,   binding.switchActivityEnabled,   binding.intervalActivity.root,   R.drawable.ic_directions_run)
+        setupMetricCard(MetricsStore.NAME_WIFI,       binding.switchWifiEnabled,       binding.intervalWifi.root,       R.drawable.ic_wifi)
+        setupMetricCard(MetricsStore.NAME_SCREEN,     binding.switchScreenEnabled,     binding.intervalScreen.root,     R.drawable.ic_phone_android)
+        setupMetricCard(MetricsStore.NAME_CONNECTION, binding.switchConnectionEnabled, binding.intervalConnection.root, R.drawable.ic_signal_cellular_alt)
         setupUploadInterval()
         binding.btnGrantPermission.setOnClickListener { openAppSettings() }
     }
@@ -84,8 +90,13 @@ class MetricsActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         updatePermissionBanner()
-        updateIntervalDisplay(MetricsStore.NAME_GPS, gpsValue)
-        updateIntervalDisplay(MetricsStore.NAME_BATTERY, battValue)
+        updateIntervalDisplay(MetricsStore.NAME_GPS,        gpsValue)
+        updateIntervalDisplay(MetricsStore.NAME_BATTERY,    battValue)
+        updateIntervalDisplay(MetricsStore.NAME_STEPS,      binding.intervalSteps.root.findViewById(R.id.tvValue))
+        updateIntervalDisplay(MetricsStore.NAME_ACTIVITY,   binding.intervalActivity.root.findViewById(R.id.tvValue))
+        updateIntervalDisplay(MetricsStore.NAME_WIFI,       binding.intervalWifi.root.findViewById(R.id.tvValue))
+        updateIntervalDisplay(MetricsStore.NAME_SCREEN,     binding.intervalScreen.root.findViewById(R.id.tvValue))
+        updateIntervalDisplay(MetricsStore.NAME_CONNECTION, binding.intervalConnection.root.findViewById(R.id.tvValue))
         updateUploadIntervalDisplay()
         updateStatusCard()
         refreshHandler.postDelayed(refreshRunnable, UI_REFRESH_MS)
@@ -140,6 +151,23 @@ class MetricsActivity : AppCompatActivity() {
         }
 
         setupIntervalButtons(MetricsStore.NAME_BATTERY, battMinus, battPlus, battValue)
+    }
+
+    // ── Generic metric card setup ─────────────────────────────────────────────
+
+    private fun setupMetricCard(name: String, switch: SwitchCompat, intervalRow: View, iconRes: Int) {
+        setRowIcon(intervalRow, iconRes)
+        val enabled = MetricsStore.isEnabled(this, name)
+        switch.isChecked = enabled
+        setIntervalVisible(intervalRow, enabled)
+        switch.setOnCheckedChangeListener { _, checked ->
+            onMetricToggled(name, checked)
+            setIntervalVisible(intervalRow, checked)
+        }
+        setupIntervalButtons(name,
+            intervalRow.findViewById(R.id.btnMinus),
+            intervalRow.findViewById(R.id.btnPlus),
+            intervalRow.findViewById(R.id.tvValue))
     }
 
     // ── Shared metric helpers ─────────────────────────────────────────────────
@@ -366,6 +394,19 @@ class MetricsActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    private fun requestOptionalPermissions() {
+        val perms = mutableListOf<String>()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+            ActivityCompat.checkSelfPermission(this, Manifest.permission.ACTIVITY_RECOGNITION)
+                != PackageManager.PERMISSION_GRANTED)
+            perms.add(Manifest.permission.ACTIVITY_RECOGNITION)
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE)
+                != PackageManager.PERMISSION_GRANTED)
+            perms.add(Manifest.permission.READ_PHONE_STATE)
+        if (perms.isNotEmpty())
+            ActivityCompat.requestPermissions(this, perms.toTypedArray(), 1003)
     }
 
     private fun openAppSettings() {

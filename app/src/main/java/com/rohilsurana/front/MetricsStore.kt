@@ -52,10 +52,20 @@ object MetricsStore {
     const val DEFAULT_UPLOAD_INTERVAL_MIN = 20
 
     // Metric definitions
-    const val NAME_GPS     = "gps"
-    const val NAME_BATTERY = "battery"
+    const val NAME_GPS        = "gps"
+    const val NAME_BATTERY    = "battery"
+    const val NAME_STEPS      = "steps"
+    const val NAME_ACTIVITY   = "detected"
+    const val NAME_WIFI       = "wifi"
+    const val NAME_SCREEN     = "screen"
+    const val NAME_CONNECTION = "connection"
+
     const val TYPE_LOCATION   = "location"
     const val TYPE_PERCENTAGE = "percentage"
+    const val TYPE_COUNT      = "count"
+    const val TYPE_ACTIVITY   = "activity"
+    const val TYPE_NETWORK    = "network"
+    const val TYPE_EVENT      = "event"
 
     // ── Per-metric toggle ─────────────────────────────────────────────────────
 
@@ -103,6 +113,23 @@ object MetricsStore {
         prefs(context).edit().putString(KEY_BUFFER, "[]").apply()
 
     fun getBufferSize(context: Context): Int = getBufferedPoints(context).size
+
+    // ── Step count persistence (for delta calculation) ────────────────────────
+
+    private const val KEY_LAST_STEP_COUNT          = "last_step_count"
+    private const val KEY_LAST_ACTIVITY_STEP_COUNT = "last_activity_step_count"
+
+    fun getLastStepCount(context: Context): Long =
+        prefs(context).getLong(KEY_LAST_STEP_COUNT, -1L)
+
+    fun setLastStepCount(context: Context, count: Long) =
+        prefs(context).edit().putLong(KEY_LAST_STEP_COUNT, count).apply()
+
+    fun getLastActivityStepCount(context: Context): Long =
+        prefs(context).getLong(KEY_LAST_ACTIVITY_STEP_COUNT, -1L)
+
+    fun setLastActivityStepCount(context: Context, count: Long) =
+        prefs(context).edit().putLong(KEY_LAST_ACTIVITY_STEP_COUNT, count).apply()
 
     // ── Debug status (last attempt results) ───────────────────────────────────
 
